@@ -1,0 +1,34 @@
+# Global ignores for monorepo safety
+
+# Secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Dependencies/build artifacts
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+
+# Logs
+**/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Runtime/temp
+*.pid
+*.tmp
+*.temp
+
+# Uploads/user-generated content
+LCGVAP-Backend/uploads/
+
+# IDE/OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,313 @@
+// =============================================================================
+// LCGVAP - Liberian Cyprus Graduates Veteran Alumina Platform
+// Prisma Database Schema
+// PostgreSQL 15+
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../backend/node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// Core User Entity
+// Represents Liberian graduates who studied in Cyprus
+// =============================================================================
+model User {
+  id            String    @id @default(uuid())
+  fullName      String    @map("full_name") @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash")
+  
+  // Profile fields
+  phone         String?   @db.VarChar(50)
+  dateOfBirth   DateTime? @map("date_of_birth")
+  nationality   String?   @db.VarChar(100)
+  
+  // Academic Information
+  university    String?   @db.VarChar(255)
+  graduationYear Int?     @map("graduation_year")
+  
+  // Status
+  isActive      Boolean   @default(true) @map("is_active")
+  isVerified    Boolean   @default(false) @map("is_verified")
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  badges        UserBadge[]
+  
+  @@index([email])
+  @@index([fullName])
+  @@index([isActive])
+  @@index([isVerified])
+  @@map("users")
+}
+
+// =============================================================================
+// Degree Types
+// Defines available academic degree levels
+// =============================================================================
+model Degree {
+  id          String   @id @default(uuid())
+  name        String   @unique @db.VarChar(100)
+  level       DegreeLevel
+  description String?  @db.Text
+  
+  // Display order for UI
+  displayOrder Int     @default(0) @map("display_order")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  badges      Badge[]
+  
+  @@index([level])
+  @@index([displayOrder])
+  @@map("degrees")
+}
+
+enum DegreeLevel {
+  BACHELOR
+  MASTER
+  PHD
+  DIPLOMA
+  CERTIFICATE
+}
+
+// =============================================================================
+// Badge Templates
+// Visual representations of degrees
+// =============================================================================
+model Badge {
+  id            String   @id @default(uuid())
+  degreeId      String   @map("degree_id")
+  name          String   @db.VarChar(100)
+  description   String?  @db.Text
+  badgeImageUrl String   @map("badge_image_url") @db.VarChar(500)
+  
+  // Badge styling
+  colorCode     String   @default("#1e40af") @map("color_code") @db.VarChar(7)
+  iconClass     String?  @map("icon_class") @db.VarChar(50)
+  
+  // Status
+  isActive      Boolean  @default(true) @map("is_active")
+  
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  degree        Degree   @relation(fields: [degreeId], references: [id], onDelete: Cascade)
+  userBadges    UserBadge[]
+  
+  @@index([degreeId])
+  @@index([isActive])
+  @@map("badges")
+}
+
+// =============================================================================
+// User-Badge Assignments (Many-to-Many with metadata)
+// Tracks which user has which verified badge
+// =============================================================================
+model UserBadge {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  badgeId         String   @map("badge_id")
+  
+  // Verification metadata
+  verifiedByAdminId String @map("verified_by_admin_id")
+  issuedAt        DateTime @default(now()) @map("issued_at")
+  
+  // Optional: Verification notes
+  verificationNotes String? @map("verification_notes") @db.Text
+  
+  // Soft delete support
+  revokedAt       DateTime? @map("revoked_at")
+  revokedBy       String?   @map("revoked_by")
+  revokeReason    String?   @map("revoke_reason") @db.Text
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge           Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  verifiedBy      Admin    @relation(fields: [verifiedByAdminId], references: [id], name: "VerifierRelation")
+  revokedByAdmin  Admin?   @relation(fields: [revokedBy], references: [id], name: "RevokerRelation")
+  
+  @@unique([userId, badgeId], name: "unique_user_badge")
+  @@index([userId])
+  @@index([badgeId])
+  @@index([verifiedByAdminId])
+  @@index([issuedAt])
+  @@map("user_badges")
+}
+
+// =============================================================================
+// Administrator Accounts
+// Role-based access control for system management
+// =============================================================================
+model Admin {
+  id            String    @id @default(uuid())
+  name          String    @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash")
+  
+  // Role-based access
+  role          AdminRole @default(ADMIN)
+  
+  // Security
+  lastLoginAt   DateTime? @map("last_login_at")
+  loginAttempts Int       @default(0) @map("login_attempts")
+  lockedUntil   DateTime? @map("locked_until")
+  
+  // Status
+  isActive      Boolean   @default(true) @map("is_active")
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  auditLogs     AuditLog[]
+  verifiedBadges UserBadge[] @relation("VerifierRelation")
+  revokedBadges  UserBadge[] @relation("RevokerRelation")
+  
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("admins")
+}
+
+enum AdminRole {
+  ADMIN
+  MASTER_ADMIN
+}
+
+// =============================================================================
+// Audit Logs
+// Comprehensive logging of all admin actions
+// =============================================================================
+model AuditLog {
+  id          String   @id @default(uuid())
+  adminId     String   @map("admin_id")
+  
+  // Action details
+  action      String   @db.VarChar(100)
+  entityType  String   @map("entity_type") @db.VarChar(50)
+  entityId    String   @map("entity_id")
+  
+  // Context
+  ipAddress   String   @map("ip_address") @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.Text
+  
+  // Data snapshots
+  oldValue    String?  @map("old_value") @db.Json
+  newValue    String?  @map("new_value") @db.Json
+  metadata    String?  @db.Json
+  
+  // Timestamp
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  
+  @@index([adminId])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@index([ipAddress])
+  @@map("audit_logs")
+}
+
+// =============================================================================
+// Rate Limiting Logs
+// Track API usage for abuse prevention
+// =============================================================================
+model RateLimitLog {
+  id        String   @id @default(uuid())
+  ipAddress String   @map("ip_address") @db.VarChar(45)
+  endpoint  String   @db.VarChar(255)
+  method    String   @db.VarChar(10)
+  
+  // Request details
+  userAgent String?  @map("user_agent") @db.Text
+  userId    String?  @map("user_id")
+  
+  // Result
+  blocked   Boolean  @default(false)
+  reason    String?  @db.VarChar(255)
+  
+  // Timestamp
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@index([ipAddress])
+  @@index([endpoint])
+  @@index([createdAt])
+  @@index([blocked])
+  @@map("rate_limit_logs")
+}
+
+// =============================================================================
+// Refresh Tokens
+// Secure token storage for session management
+// =============================================================================
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  
+  // Owner (polymorphic - can be User or Admin)
+  userId    String?  @map("user_id")
+  adminId   String?  @map("admin_id")
+  userType  String   @map("user_type") @db.VarChar(20) // 'USER' or 'ADMIN'
+  
+  // Token metadata
+  expiresAt DateTime @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  replacedByToken String? @map("replaced_by_token")
+  
+  // Security
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@index([token])
+  @@index([userId])
+  @@index([adminId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("refresh_tokens")
+}
+
+// =============================================================================
+// System Settings
+// Key-value store for system configuration
+// =============================================================================
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique @db.VarChar(100)
+  value       String   @db.Text
+  description String?  @db.Text
+  
+  // Metadata
+  isPublic    Boolean  @default(false) @map("is_public")
+  category    String   @default("general") @db.VarChar(50)
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@index([key])
+  @@index([category])
+  @@map("system_settings")
+}

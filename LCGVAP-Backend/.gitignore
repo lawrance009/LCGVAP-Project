@@ -1,0 +1,28 @@
+# ============================================================
+# LCGVAP Backend — .gitignore
+# NEVER commit secrets, credentials, or runtime artifacts
+# ============================================================
+
+# Environment variables — SECRETS LIVE HERE
+.env
+.env.*
+!.env.example
+
+# Node modules
+node_modules/
+
+# Uploaded files (user data — goes to S3 eventually)
+uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime / OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
