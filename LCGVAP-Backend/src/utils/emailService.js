@@ -3,7 +3,14 @@ const { redisClient, isRedisReady } = require('../config/redis');
 const logger = require('./logger');
 const nodemailer = require('nodemailer');
 
-const emailQueue = new Queue('emailQueue', { connection: redisClient });
+let emailQueue = null;
+
+const getEmailQueue = () => {
+  if (!emailQueue && redisClient && isRedisReady()) {
+    emailQueue = new Queue('emailQueue', { connection: redisClient });
+  }
+  return emailQueue;
+};
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -33,10 +40,16 @@ const sendEmail = async (to, subject, text, html) => {
     return sendDirect();
   }
 
+  const queue = getEmailQueue();
+  if (!queue) {
+    logger.warn(`Redis queue unavailable; sending email directly to ${to}`);
+    return sendDirect();
+  }
+
   try {
     // Push the email job to the Redis queue
     // The worker (src/workers/emailWorker.js) will pick it up and actually send it
-    const job = await emailQueue.add('sendEmail', {
+    const job = await queue.add('sendEmail', {
       to,
       subject,
       text,

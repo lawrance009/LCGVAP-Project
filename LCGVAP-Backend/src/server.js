@@ -1,5 +1,11 @@
 require('dotenv').config();
 
+// Railway injects RAILWAY_* vars — always run production mode there
+// (even if NODE_ENV=development was copied from local .env.example)
+if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID) {
+  process.env.NODE_ENV = 'production';
+}
+
 const app    = require('./app');
 const logger = require('./utils/logger');
 const db     = require('./config/db');
@@ -43,7 +49,9 @@ const shutdown = async (signal) => {
 
     try {
       await closeEmailWorker(); // Stop processing background emails safely
-      try { await redisClient.quit(); } catch (_) {}
+      if (redisClient) {
+        try { await redisClient.quit(); } catch (_) {}
+      }
       await db.end();          // close the PostgreSQL connection pool
       logger.info('Database pool, Redis client, and email worker closed');
     } catch (err) {

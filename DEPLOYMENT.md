@@ -1,8 +1,32 @@
-# LCGVAP Deployment Guide (Render + Vercel)
+# LCGVAP Deployment Guide (Render + Vercel + Railway)
 
 This repo is set up for:
-- Backend: Render Web Service
+- Backend: Render Web Service or Railway
 - Frontend: Vercel
+
+## Railway (backend + Redis)
+
+### Services
+1. **PostgreSQL** — add Railway Postgres (or use external `DATABASE_URL`)
+2. **Redis** — add Railway Redis plugin
+3. **Backend** — deploy from root directory `LCGVAP-Backend`
+   - Build: `npm install`
+   - Start: `npm start`
+   - Health check: `/health`
+
+### Link Redis to the backend (required)
+Without this, the app tries `localhost:6379` and Redis will fail.
+
+1. Open your **backend** service → **Variables**
+2. **Add Reference** → select your **Redis** service → choose **`REDIS_URL`**
+3. Redeploy the backend
+
+Also set `NODE_ENV=production` on Railway (your logs showed `development`).
+
+### Backend env vars on Railway
+Same as Render (see section 2 below), plus:
+- `REDIS_URL=${{Redis.REDIS_URL}}` (reference from Redis plugin)
+- `PORT` is set automatically by Railway — do not hardcode
 
 ## 1) GitHub Security Checklist (before first push)
 

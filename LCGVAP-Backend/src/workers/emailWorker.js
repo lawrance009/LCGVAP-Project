@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
 let emailWorker;
 
 const initEmailWorker = () => {
-  if (isRedisDisabled()) {
+  if (isRedisDisabled() || !redisClient) {
     logger.warn('Email worker not started: Redis is unavailable (fail-soft mode).');
     return;
   }
