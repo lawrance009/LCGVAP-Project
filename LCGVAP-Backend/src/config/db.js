@@ -1,6 +1,15 @@
 const { Pool } = require('pg');
+const logger = require('../utils/logger');
 
 const connectionString = process.env.DATABASE_URL;
+
+if (connectionString && !/^postgres(ql)?:\/\//i.test(connectionString.trim())) {
+  logger.error(
+    'DATABASE_URL is invalid — must be a PostgreSQL URL (postgresql://...). On Railway: Add Reference → Postgres → DATABASE_URL'
+  );
+} else if (!connectionString && !process.env.DB_HOST) {
+  logger.warn('No DATABASE_URL or DB_HOST configured — database queries will fail');
+}
 
 const poolConfig = connectionString
   ? {

@@ -12,28 +12,28 @@
 const Redis = require('ioredis');
 const logger = require('../utils/logger');
 
+const onRailway = Boolean(
+  process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID
+);
+
+const isLocalhostUrl = (url) =>
+  Boolean(url && /localhost|127\.0\.0\.1|::1/.test(String(url).trim()));
+
 /** Resolve Redis URL from env (Railway, Upstash, Docker Compose, etc.) */
 const resolveRedisUrl = () => {
-  const onRailway = Boolean(
-    process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID
-  );
-
-  const isLocalhostUrl = (url) =>
-    url && /localhost|127\.0\.0\.1|::1/.test(url.trim());
-
   const direct =
     process.env.REDIS_URL ||
     process.env.REDIS_PRIVATE_URL ||
     process.env.REDIS_PUBLIC_URL;
 
-  // On Railway, ignore stale REDIS_URL=localhost and use REDISHOST refs instead
+  // On Railway, never use a stale localhost URL from local .env.example
   if (direct && direct.trim() && !(onRailway && isLocalhostUrl(direct))) {
     return direct.trim();
   }
 
   if (onRailway && isLocalhostUrl(direct)) {
     logger.warn(
-      'Ignoring REDIS_URL=localhost on Railway. Use a Redis service reference or REDISHOST/REDISPORT/REDISPASSWORD refs.'
+      'Ignoring REDIS_URL=localhost on Railway. Link Redis via Variable Reference on the backend service.'
     );
   }
 
@@ -42,7 +42,7 @@ const resolveRedisUrl = () => {
   const user = process.env.REDIS_USER || process.env.REDISUSER || 'default';
   const password = process.env.REDIS_PASSWORD || process.env.REDISPASSWORD;
 
-  if (host) {
+  if (host && !isLocalhostUrl(host)) {
     const auth = password ? `${user}:${encodeURIComponent(password)}@` : '';
     return `redis://${auth}${host}:${port}`;
   }
@@ -52,21 +52,26 @@ const resolveRedisUrl = () => {
 
 const redisUrl = resolveRedisUrl();
 
-const onRailway = Boolean(
-  process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID
-);
-
 let redisReady = false;
 let redisDisabled = !redisUrl;
 
+if (onRailway) {
+  logger.info('Railway Redis config', {
+    hasRedisUrl: Boolean(process.env.REDIS_URL),
+    redisUrlIsLocalhost: isLocalhostUrl(process.env.REDIS_URL),
+    hasRedisHost: Boolean(process.env.REDISHOST || process.env.REDIS_HOST),
+    hasRedisPassword: Boolean(process.env.REDISPASSWORD || process.env.REDIS_PASSWORD),
+    resolved: redisUrl ? 'ok' : 'missing',
+  });
+}
+
 if (!redisUrl) {
-  logger.warn(
-    'REDIS_URL is not set. Local dev: use redis://localhost:6379 or start Redis via docker compose. Redis features run in fail-soft mode.'
-  );
-} else if (/localhost|127\.0\.0\.1|::1/.test(redisUrl) && onRailway) {
-  logger.error(
-    'REDIS_URL points to localhost on Railway. Delete it or add REDISHOST/REDISPORT/REDISPASSWORD references from your Redis service.'
-  );
+  const msg = onRailway
+    ? 'Redis not configured on Railway. On the BACKEND service: delete REDIS_URL=localhost, then Add Reference → Redis → REDIS_URL (or REDISHOST + REDISPORT + REDISPASSWORD).'
+    : 'REDIS_URL is not set. Local dev: use redis://localhost:6379 or docker compose. Redis features run in fail-soft mode.';
+  logger.warn(msg);
+} else if (isLocalhostUrl(redisUrl)) {
+  logger.error('Redis URL points to localhost — not valid for cloud deploy.');
   redisDisabled = true;
 }
 
@@ -75,6 +80,7 @@ const redisOptions = {
   enableReadyCheck: true,
   lazyConnect: true,
   retryStrategy(times) {
+    if (redisDisabled) return null;
     if (times <= 10) {
       logger.warn(`Redis connection lost. Retrying... (Attempt ${times})`);
       return Math.min(times * 200, 3000);
@@ -86,12 +92,12 @@ const redisOptions = {
   },
 };
 
-// TLS for rediss:// URLs (Upstash, some managed Redis providers)
 if (redisUrl && redisUrl.startsWith('rediss://')) {
   redisOptions.tls = { rejectUnauthorized: false };
 }
 
-const redisClient = redisUrl ? new Redis(redisUrl, redisOptions) : null;
+// Do not create a client when disabled — prevents localhost retry spam on Railway
+const redisClient = redisUrl && !redisDisabled ? new Redis(redisUrl, redisOptions) : null;
 
 if (redisClient) {
   redisClient.on('ready', () => {

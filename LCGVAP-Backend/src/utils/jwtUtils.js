@@ -82,10 +82,14 @@ const verifyRefreshToken = (token) => {
 //   secure    → only sent over HTTPS (in production)
 //   sameSite  → not sent on cross-site requests (CSRF-proof)
 //   maxAge    → 7 days in milliseconds
+// Cross-origin deploy (e.g. Netlify frontend + Railway API) needs sameSite: 'none'
+// so the HttpOnly refresh cookie is sent on API requests (withCredentials).
+const refreshSameSite = process.env.NODE_ENV === 'production' ? 'none' : 'lax';
+
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure:   process.env.NODE_ENV === 'production',
-  sameSite: 'lax',   // 'strict' blocks the cookie on some navigations; 'lax' is safe
+  sameSite: refreshSameSite,
   maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days in ms
   path:     '/',     // send on all requests so refresh endpoint receives it reliably
 };
@@ -94,7 +98,7 @@ const REFRESH_COOKIE_OPTIONS = {
 const REFRESH_COOKIE_CLEAR_OPTIONS = {
   httpOnly: true,
   secure:   process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  sameSite: refreshSameSite,
   path:     '/',
 };
 

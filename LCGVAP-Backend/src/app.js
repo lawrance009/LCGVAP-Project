@@ -42,6 +42,9 @@ const path = require('path');
 
 const app = express();
 
+// Railway/Netlify sit behind a reverse proxy — required for rate-limit + client IP
+app.set('trust proxy', 1);
+
 // ── Base URL — used by controllers to build file URLs ─────────
 app.locals.baseUrl = process.env.BASE_URL || 'http://localhost:5000';
 
@@ -56,9 +59,34 @@ app.use(requestLogger);
 // ── 3. CORS ───────────────────────────────────────────────────
 const normalizeOrigin = (value) => String(value || '').trim().replace(/\/$/, '');
 
-const allowedOrigins = process.env.CORS_ORIGINS
+let allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(normalizeOrigin).filter(Boolean)
   : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000'];
+
+// Optional alias — easier to remember on Railway than CORS_ORIGINS
+if (process.env.FRONTEND_URL) {
+  const frontendOrigin = normalizeOrigin(process.env.FRONTEND_URL);
+  if (frontendOrigin && !allowedOrigins.includes(frontendOrigin)) {
+    allowedOrigins.push(frontendOrigin);
+  }
+}
+
+if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+  allowedOrigins = ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000'];
+  logger.warn('CORS_ORIGINS parsed empty — using localhost defaults only');
+}
+
+// Production Netlify frontend (Railway deploy) — allow if not already configured
+const onRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+const netlifyProduction = 'https://lcgvap.netlify.app';
+if (onRailway && process.env.NODE_ENV === 'production' && !allowedOrigins.includes(netlifyProduction)) {
+  allowedOrigins.push(netlifyProduction);
+  logger.info(`Auto-added CORS origin: ${netlifyProduction}`);
+}
+
+if (process.env.NODE_ENV === 'production') {
+  logger.info(`CORS enabled for: ${allowedOrigins.join(', ')}`);
+}
 
 const originIsAllowed = (origin) => {
   if (!origin) return true;
@@ -75,18 +103,12 @@ const originIsAllowed = (origin) => {
   return false;
 };
 
-if (process.env.NODE_ENV === 'production') {
-  logger.info('CORS allowed origins', {
-    origins: allowedOrigins.length ? allowedOrigins : ['localhost defaults only'],
-  });
-}
-
 const corsOptions = {
   origin: (origin, callback) => {
     if (originIsAllowed(origin)) {
       callback(null, origin || true);
     } else {
-      logger.warn('CORS blocked request', { origin, allowedOrigins });
+      logger.warn(`CORS blocked request from ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
       callback(null, false);
     }
   },
