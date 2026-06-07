@@ -14,21 +14,36 @@ const logger = require('../utils/logger');
 
 /** Resolve Redis URL from env (Railway, Upstash, Docker Compose, etc.) */
 const resolveRedisUrl = () => {
+  const onRailway = Boolean(
+    process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID
+  );
+
+  const isLocalhostUrl = (url) =>
+    url && /localhost|127\.0\.0\.1|::1/.test(url.trim());
+
   const direct =
     process.env.REDIS_URL ||
     process.env.REDIS_PRIVATE_URL ||
     process.env.REDIS_PUBLIC_URL;
 
-  if (direct && direct.trim()) {
+  // On Railway, ignore stale REDIS_URL=localhost and use REDISHOST refs instead
+  if (direct && direct.trim() && !(onRailway && isLocalhostUrl(direct))) {
     return direct.trim();
+  }
+
+  if (onRailway && isLocalhostUrl(direct)) {
+    logger.warn(
+      'Ignoring REDIS_URL=localhost on Railway. Use a Redis service reference or REDISHOST/REDISPORT/REDISPASSWORD refs.'
+    );
   }
 
   const host = process.env.REDIS_HOST || process.env.REDISHOST;
   const port = process.env.REDIS_PORT || process.env.REDISPORT || '6379';
+  const user = process.env.REDIS_USER || process.env.REDISUSER || 'default';
   const password = process.env.REDIS_PASSWORD || process.env.REDISPASSWORD;
 
   if (host) {
-    const auth = password ? `default:${encodeURIComponent(password)}@` : '';
+    const auth = password ? `${user}:${encodeURIComponent(password)}@` : '';
     return `redis://${auth}${host}:${port}`;
   }
 
@@ -50,7 +65,7 @@ if (!redisUrl) {
   );
 } else if (/localhost|127\.0\.0\.1|::1/.test(redisUrl) && onRailway) {
   logger.error(
-    'REDIS_URL points to localhost — that will not work on Railway. Delete this variable and use Add Reference → Redis service → REDIS_URL instead.'
+    'REDIS_URL points to localhost on Railway. Delete it or add REDISHOST/REDISPORT/REDISPASSWORD references from your Redis service.'
   );
   redisDisabled = true;
 }
@@ -121,7 +136,7 @@ const waitForRedisReady = (client, timeoutMs = 15_000) =>
   });
 
 const initRedis = async () => {
-  if (!redisClient || !redisUrl) {
+  if (!redisClient || !redisUrl || redisDisabled) {
     redisDisabled = true;
     return false;
   }
