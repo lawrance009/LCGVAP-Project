@@ -1,9 +1,14 @@
-require('dotenv').config();
-
 // Railway injects RAILWAY_* vars — always run production mode there
 // (even if NODE_ENV=development was copied from local .env.example)
 if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID) {
   process.env.NODE_ENV = 'production';
+}
+
+// Only load .env in local development — never on Railway or in production.
+// This prevents local .env values (e.g. REDIS_URL=redis://localhost:6379)
+// from overwriting Railway's injected reference variables at runtime.
+if (!process.env.RAILWAY_ENVIRONMENT && !process.env.RAILWAY_PROJECT_ID && process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
 }
 
 const app    = require('./app');
