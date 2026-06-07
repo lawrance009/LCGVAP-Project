@@ -54,17 +54,40 @@ app.use(correlationMiddleware);
 app.use(requestLogger);
 
 // ── 3. CORS ───────────────────────────────────────────────────
+const normalizeOrigin = (value) => String(value || '').trim().replace(/\/$/, '');
+
 const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',')
+  ? process.env.CORS_ORIGINS.split(',').map(normalizeOrigin).filter(Boolean)
   : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000'];
+
+const originIsAllowed = (origin) => {
+  if (!origin) return true;
+
+  const normalized = normalizeOrigin(origin);
+  if (allowedOrigins.includes(normalized)) return true;
+
+  // Netlify deploy previews: https://deploy-preview-123--lcgvap.netlify.app
+  const allowsNetlify = allowedOrigins.some((o) => /lcgvap\.netlify\.app$/i.test(o));
+  if (allowsNetlify && /^https:\/\/([a-z0-9-]+--)?lcgvap\.netlify\.app$/i.test(normalized)) {
+    return true;
+  }
+
+  return false;
+};
+
+if (process.env.NODE_ENV === 'production') {
+  logger.info('CORS allowed origins', {
+    origins: allowedOrigins.length ? allowedOrigins : ['localhost defaults only'],
+  });
+}
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
+    if (originIsAllowed(origin)) {
+      callback(null, origin || true);
     } else {
-      logger.warn('CORS blocked request', { origin });
-      callback(new Error('Not allowed by CORS'));
+      logger.warn('CORS blocked request', { origin, allowedOrigins });
+      callback(null, false);
     }
   },
   credentials:          true,
