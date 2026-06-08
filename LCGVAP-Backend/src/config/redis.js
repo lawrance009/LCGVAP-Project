@@ -79,6 +79,8 @@ const redisOptions = {
   maxRetriesPerRequest: null, // Required by BullMQ
   enableReadyCheck: true,
   lazyConnect: true,
+  // Railway private network is IPv6; ioredis defaults to IPv4-only DNS lookups
+  ...(onRailway ? { family: 0 } : {}),
   retryStrategy(times) {
     if (redisDisabled) return null;
     if (times <= 10) {
