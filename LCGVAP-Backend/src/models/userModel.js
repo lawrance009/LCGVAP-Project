@@ -53,7 +53,11 @@ const createUser = async (userData) => {
 };
 
 const findAdminByEmail = async (email) => {
-  const query = "SELECT * FROM users WHERE email = $1 AND role IN ('admin', 'master_admin') LIMIT 1";
+  const query = `
+    SELECT * FROM users
+    WHERE LOWER(email) = LOWER($1) AND role IN ('admin', 'master_admin')
+    LIMIT 1
+  `;
   const result = await db.query(query, [email]);
   return result.rows[0];
 };

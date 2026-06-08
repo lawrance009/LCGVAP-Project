@@ -216,10 +216,12 @@ app.get('/private/:filename', (req, res) => {
 // ── Health Check (/health) ────────────────────────────────────
 // Fast ping — confirms the process is alive (used by Docker/load balancers)
 app.get('/health', (req, res) => {
+  const { isEmailConfigured } = require('./utils/mailTransport');
   res.status(200).json({
     status:    'ok',
     timestamp: new Date().toISOString(),
     uptime:    process.uptime(),
+    email:     isEmailConfigured() ? 'configured' : 'missing_credentials',
   });
 });
 

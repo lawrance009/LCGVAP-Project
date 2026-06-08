@@ -11,6 +11,10 @@ if (!process.env.RAILWAY_ENVIRONMENT && !process.env.RAILWAY_PROJECT_ID && proce
   require('dotenv').config();
 }
 
+const { ensureUploadDirs } = require('./utils/ensureUploadDirs');
+
+ensureUploadDirs();
+
 const app    = require('./app');
 const logger = require('./utils/logger');
 const db     = require('./config/db');
@@ -18,6 +22,7 @@ const { initRedis, redisClient } = require('./config/redis');
 
 const { initCronJobs } = require('./services/cronService');
 const { initEmailWorker, closeEmailWorker } = require('./workers/emailWorker');
+const { verifyMailTransport } = require('./utils/mailTransport');
 
 const PORT = process.env.PORT || 5000;
 
@@ -33,6 +38,8 @@ const server = app.listen(PORT, () => {
 });
 
 (async () => {
+  await verifyMailTransport();
+
   const redisOk = await initRedis();
   if (redisOk) {
     initEmailWorker();

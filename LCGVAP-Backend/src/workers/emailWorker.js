@@ -8,18 +8,9 @@
  */
 
 const { Worker } = require('bullmq');
-const nodemailer = require('nodemailer');
 const { redisClient, isRedisDisabled } = require('../config/redis');
 const logger = require('../utils/logger');
-
-// Setup Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail', // or your SMTP provider
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+const { sendMailMessage } = require('../utils/mailTransport');
 
 let emailWorker;
 
@@ -34,19 +25,8 @@ const initEmailWorker = () => {
     
     logger.info(`Processing email job ${job.id} for ${to}`);
 
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      logger.warn('EMAIL_USER or EMAIL_PASS not set. Simulating email send.');
-      return { status: 'simulated' };
-    }
-
     try {
-      const info = await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to,
-        subject,
-        text,
-        html
-      });
+      const info = await sendMailMessage({ to, subject, text, html });
       logger.info(`Email job ${job.id} sent successfully`);
       return info;
     } catch (error) {

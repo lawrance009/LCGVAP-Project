@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Swal from 'sweetalert2';
+import { useAuth } from '../context/AuthContext';
 
 const AdminRegister = () => {
     const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ const AdminRegister = () => {
     const [closedReason, setClosedReason] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { setAuth } = useAuth();
 
     useEffect(() => {
         api.get('/auth/admin/registration-status')
@@ -55,7 +57,7 @@ const AdminRegister = () => {
         setLoading(true);
 
         try {
-            await api.post(
+            const { data } = await api.post(
                 '/auth/admin/register',
                 {
                     first_name: formData.first_name,
@@ -68,14 +70,18 @@ const AdminRegister = () => {
                 }
             );
 
+            if (data.token && data.user) {
+                setAuth(data.user, data.token);
+            }
+
             Swal.fire({
                 title: 'Boss Admin Created!',
-                text: 'You can now log in.',
+                text: 'Check your email for login details. Redirecting to dashboard...',
                 icon: 'success',
                 confirmButtonColor: '#1e40af'
             });
 
-            navigate('/patron-entry');
+            navigate('/patron/dashboard');
         } catch (err) {
             setError(err.response?.data?.error || 'Registration failed. Please try again.');
         } finally {

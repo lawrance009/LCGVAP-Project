@@ -25,6 +25,25 @@ Create four services in one Railway project:
 - Start: `npm start`
 - Health check: `/health`
 
+### Uploads volume (required for images)
+
+Railway wipes container disk on every redeploy. Without a volume, slide/university logos return **404** after redeploy.
+
+Volumes are **not** inside backend Settings on most Railway UIs. Create from the **project canvas**:
+
+1. Open your Railway **project** (the graph with Backend, Postgres, Redis boxes)
+2. **Right-click empty space** on the canvas → **New Volume**  
+   **OR** press **Ctrl+K** (Windows) / **Cmd+K** (Mac) → type **New Volume** → Enter
+3. When prompted, select your **backend** service
+4. Set **mount path**: `/app/uploads`
+5. Add variable on **backend** (if uploads fail to save): `RAILWAY_RUN_UID=0`
+6. **Redeploy** backend
+7. **Re-upload** slides and university logos in admin (old files are gone)
+
+You should see a **Volume** box on the canvas connected to the backend service.
+
+After this, uploads persist across redeploys.
+
 ---
 
 ## 2) Railway backend — variables
@@ -56,7 +75,8 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 | `JWT_REFRESH_SECRET` | different 64-byte hex |
 | `ADMIN_CREATION_SECRET` | 32-byte hex |
 | `FILE_ACCESS_SECRET` | random string |
-| `EMAIL_USER` / `EMAIL_PASS` | Gmail app password (optional) |
+| `EMAIL_USER` | Full Gmail address, e.g. `lcgvap@gmail.com` — **not** `EMAIL` |
+| `EMAIL_PASS` | Gmail **App Password** (16 chars, no spaces) — **not** `EMAIL_PASSWORD` |
 
 ### Do NOT put on Railway backend
 
@@ -66,6 +86,19 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 - `NODE_ENV=development`
 
 Redeploy backend after changing variables.
+
+### Email on Railway (Gmail)
+
+1. Google Account → **Security** → turn on **2-Step Verification**
+2. **App passwords** → create one for "Mail" → copy the 16-character code
+3. Railway **backend** → **Variables** → add exactly:
+   - `EMAIL_USER` = your Gmail address
+   - `EMAIL_PASS` = the 16-character app password (paste with or without spaces — the server strips spaces)
+4. **Redeploy** the backend (required — env vars are read at startup)
+5. Open **Deploy Logs** and confirm you see `SMTP connection verified`. If you see `SMTP verification failed`, the app password or Gmail address is wrong.
+6. Quick check: `GET https://lcgvap-project-production.up.railway.app/health` should show `"email": "configured"`
+
+**Do not** use your normal Gmail login password — only an App Password works.
 
 ---
 

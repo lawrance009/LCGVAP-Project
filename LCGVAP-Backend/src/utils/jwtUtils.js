@@ -66,6 +66,24 @@ const generateRefreshToken = (payload) => {
   });
 };
 
+/** One-time-style admin welcome link (valid 72h, email-bound) */
+const generateAdminSetupToken = (email, userId) =>
+  jwt.sign(
+    { email, id: userId, type: 'admin_setup' },
+    getSecret('JWT_ACCESS_SECRET'),
+    { expiresIn: '72h' }
+  );
+
+const verifyAdminSetupToken = (token) => {
+  const decoded = jwt.verify(token, getSecret('JWT_ACCESS_SECRET'));
+  if (decoded.type !== 'admin_setup') {
+    const e = new Error('Invalid setup token');
+    e.code = 'SETUP_TOKEN_INVALID';
+    throw e;
+  }
+  return decoded;
+};
+
 const verifyRefreshToken = (token) => {
   try {
     return jwt.verify(token, getSecret('JWT_REFRESH_SECRET'));
@@ -107,6 +125,8 @@ module.exports = {
   verifyAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
+  generateAdminSetupToken,
+  verifyAdminSetupToken,
   REFRESH_COOKIE_OPTIONS,
   REFRESH_COOKIE_CLEAR_OPTIONS,
 };

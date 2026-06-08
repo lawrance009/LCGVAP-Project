@@ -1,74 +1,12 @@
-const { Queue } = require('bullmq');
-const { redisClient, isRedisReady } = require('../config/redis');
 const logger = require('./logger');
-const nodemailer = require('nodemailer');
+const { sendMailMessage } = require('./mailTransport');
 
-let emailQueue = null;
-
-const getEmailQueue = () => {
-  if (!emailQueue && redisClient && isRedisReady()) {
-    emailQueue = new Queue('emailQueue', { connection: redisClient });
-  }
-  return emailQueue;
-};
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
+// Send immediately so auth/OTP failures surface to the API (not silently queued).
 const sendEmail = async (to, subject, text, html) => {
-  const sendDirect = async () => {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      logger.warn('EMAIL_USER or EMAIL_PASS not set. Simulating direct email send.');
-      return { message: 'Email simulated (no SMTP credentials).' };
-    }
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to,
-      subject,
-      text,
-      html
-    });
-    return { message: 'Email sent directly (Redis fail-soft mode).' };
-  };
-
-  if (!isRedisReady()) {
-    logger.warn(`Redis unavailable; sending email directly to ${to}`);
-    return sendDirect();
-  }
-
-  const queue = getEmailQueue();
-  if (!queue) {
-    logger.warn(`Redis queue unavailable; sending email directly to ${to}`);
-    return sendDirect();
-  }
-
-  try {
-    // Push the email job to the Redis queue
-    // The worker (src/workers/emailWorker.js) will pick it up and actually send it
-    const job = await queue.add('sendEmail', {
-      to,
-      subject,
-      text,
-      html
-    }, {
-      attempts: 3, // Retry up to 3 times if it fails
-      backoff: {
-        type: 'exponential',
-        delay: 5000 // Wait 5s, 25s, 125s between retries
-      }
-    });
-
-    logger.info(`Email job ${job.id} added to queue for ${to}`);
-    return { jobId: job.id, message: 'Email queued successfully' };
-  } catch (error) {
-    logger.error('Failed to add email to queue', { error: error.message });
-    logger.warn(`Falling back to direct email send for ${to}`);
-    return sendDirect();
-  }
+  logger.info(`Sending email to ${to}`);
+  const info = await sendMailMessage({ to, subject, text, html });
+  logger.info(`Email sent to ${to}`, { messageId: info.messageId });
+  return info;
 };
 
 
@@ -307,11 +245,59 @@ LCGVAP Administration`;
   return sendEmail(to, subject, text, html);
 };
 
+const sendAdminWelcomeEmail = async ({ to, name, role, loginUrl, setupToken }) => {
+  const roleLabel = role === 'master_admin' ? 'Master Admin (Boss Admin)' : 'Admin';
+  const subject = 'LCGVAP Admin Account Created — Login Details';
+  const text = `Dear ${name},
+
+Your LCGVAP ${roleLabel} account has been created.
+
+Login email: ${to}
+
+Option 1 — One-time login link (valid 72 hours):
+${loginUrl}
+
+Option 2 — Manual login at ${loginUrl.split('?')[0]}:
+Use your email and the password you chose during registration.
+
+Your one-time setup token (paste on login if prompted):
+${setupToken}
+
+Keep this email private. Do not share your setup token.
+
+LCGVAP Administration`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /><title>Admin Account Created</title></head>
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.05);border-top:4px solid #1e40af;">
+<tr><td style="padding:40px;">
+<h2 style="color:#111827;font-size:24px;margin-bottom:20px;">Admin Account Created</h2>
+<p style="font-size:16px;color:#4b5563;line-height:1.6;">Dear ${name},</p>
+<p style="font-size:16px;color:#4b5563;line-height:1.6;">Your <strong>${roleLabel}</strong> account is ready.</p>
+<p style="font-size:16px;color:#4b5563;line-height:1.6;"><strong>Login email:</strong> ${to}</p>
+<div style="text-align:center;margin:28px 0;">
+  <a href="${loginUrl}" style="display:inline-block;background:#1e40af;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:6px;font-weight:bold;">Log In to Admin Portal</a>
+</div>
+<p style="font-size:14px;color:#4b5563;line-height:1.6;">Or sign in manually with your email and the <strong>password you set during registration</strong> (not your secret code).</p>
+<div style="background:#f8fafc;border:1px solid #e2e8f0;padding:16px;border-radius:6px;margin:20px 0;word-break:break-all;">
+  <p style="margin:0 0 8px 0;color:#334155;font-weight:bold;font-size:13px;">One-time setup token (72h):</p>
+  <p style="margin:0;color:#0f172a;font-family:monospace;font-size:12px;">${setupToken}</p>
+</div>
+<p style="font-size:12px;color:#64748b;">Keep this email private. LCGVAP will never ask you to share this token.</p>
+</td></tr></table></td></tr></table></body></html>`;
+
+  return sendEmail(to, subject, text, html);
+};
+
 module.exports = {
   sendEmail,
   sendOtpEmail,
   sendRegistrationAckEmail,
   sendVerificationEmail,
   sendRejectionEmail,
-  sendRejectionPurgeEmail
+  sendRejectionPurgeEmail,
+  sendAdminWelcomeEmail,
 };

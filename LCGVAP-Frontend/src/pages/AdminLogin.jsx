@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Swal from 'sweetalert2';
@@ -7,16 +7,46 @@ import { motion } from 'framer-motion';
 import { Shield, Lock, Mail } from 'lucide-react';
 
 const AdminLogin = () => {
+    const [searchParams] = useSearchParams();
     const [formData, setFormData] = useState({
         email: '',
-        password: ''
+        password: '',
+        setup_token: ''
     });
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { setAuth } = useAuth();
 
+    useEffect(() => {
+        const setupToken = searchParams.get('setup_token');
+        const email = searchParams.get('email');
+        if (setupToken) {
+            setFormData((prev) => ({
+                ...prev,
+                setup_token: setupToken,
+                email: email || prev.email,
+            }));
+        }
+    }, [searchParams]);
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const performLogin = async (payload) => {
+        const response = await api.post('/auth/admin/login', payload);
+        const { token, user } = response.data;
+        setAuth(user, token);
+
+        Swal.fire({
+            title: 'Welcome, Admin',
+            text: 'Authentication successful',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        navigate('/patron/dashboard');
     };
 
     const handleLogin = async (e) => {
@@ -24,20 +54,14 @@ const AdminLogin = () => {
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/admin/login', formData);
-            const { token, user } = response.data;
+            const payload = { email: formData.email };
+            if (formData.setup_token?.trim()) {
+                payload.setup_token = formData.setup_token.trim();
+            } else {
+                payload.password = formData.password;
+            }
 
-            setAuth(user, token);
-
-            Swal.fire({
-                title: 'Welcome, Admin',
-                text: 'Authentication successful',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
-
-            navigate('/patron/dashboard');
+            await performLogin(payload);
         } catch (error) {
             console.error('Admin Login Error:', error);
             const status  = error.response?.status;
@@ -53,6 +77,32 @@ const AdminLogin = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const setupToken = searchParams.get('setup_token');
+        const email = searchParams.get('email');
+        if (!setupToken || !email) return;
+
+        let cancelled = false;
+        (async () => {
+            setLoading(true);
+            try {
+                if (!cancelled) {
+                    await performLogin({ email, setup_token: setupToken });
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    const message = error.response?.data?.error || 'Login link expired or invalid.';
+                    Swal.fire('Access Denied', message, 'error');
+                }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative" style={{
@@ -83,7 +133,7 @@ const AdminLogin = () => {
                 <form className="space-y-8" onSubmit={handleLogin}>
                     <div className="space-y-6">
                         <div>
-                            <label className="text-xs font-bold text-gray-900 uppercase tracking-[0.15em] mb-3 block">Admin Identity</label>
+                            <label className="text-xs font-bold text-gray-900 uppercase tracking-[0.15em] mb-3 block">Email</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
                                     <Mail className="h-5 w-5 text-gray-400" />
@@ -101,7 +151,7 @@ const AdminLogin = () => {
                         </div>
 
                         <div>
-                            <label className="text-xs font-bold text-gray-900 uppercase tracking-[0.15em] mb-3 block">Access Token</label>
+                            <label className="text-xs font-bold text-gray-900 uppercase tracking-[0.15em] mb-3 block">Password</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
                                     <Lock className="h-5 w-5 text-gray-400" />
@@ -109,13 +159,25 @@ const AdminLogin = () => {
                                 <input
                                     name="password"
                                     type="password"
-                                    required
                                     value={formData.password}
                                     onChange={handleChange}
                                     className="block w-full pl-16 pr-6 py-5 border-2 border-gray-200 placeholder-gray-400 text-gray-900 text-lg focus:outline-none focus:border-indigo-600 transition-all bg-white"
-                                    placeholder="••••••••"
+                                    placeholder="Your account password"
                                 />
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-gray-900 uppercase tracking-[0.15em] mb-3 block">Setup Token (from email)</label>
+                            <input
+                                name="setup_token"
+                                type="text"
+                                value={formData.setup_token}
+                                onChange={handleChange}
+                                className="block w-full px-6 py-4 border-2 border-gray-200 placeholder-gray-400 text-gray-900 text-sm focus:outline-none focus:border-indigo-600 transition-all bg-white font-mono"
+                                placeholder="Optional — paste one-time token from welcome email"
+                            />
+                            <p className="text-xs text-gray-500 mt-2">Use your password, or paste the setup token from your welcome email.</p>
                         </div>
                     </div>
 

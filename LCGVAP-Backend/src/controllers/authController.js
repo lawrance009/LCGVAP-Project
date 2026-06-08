@@ -92,7 +92,15 @@ const requestOtp = async (req, res, next) => {
     const userName = user.first_name || 'Graduate';
 
     // Send the PLAIN OTP by email
-    await emailService.sendOtpEmail(email, userName, plainOtp, 5);
+    try {
+      await emailService.sendOtpEmail(email, userName, plainOtp, 5);
+    } catch (emailErr) {
+      console.error('OTP email failed:', emailErr.message);
+      return res.status(503).json({
+        error: 'Could not send verification email. Please try again in a few minutes.',
+        code: 'EMAIL_SEND_FAILED',
+      });
+    }
 
     // IMPORTANT: do NOT return the OTP in the response
     res.status(200).json({ message: 'OTP sent to your email. It expires in 5 minutes.' });
@@ -271,7 +279,7 @@ const logout = async (req, res) => {
 // ── ADMIN LOGIN ───────────────────────────────────────────────
 const loginAdmin = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, setup_token: setupToken } = req.body;
 
     const user = await userModel.findAdminByEmail(email);
     if (!user) {
@@ -288,18 +296,35 @@ const loginAdmin = async (req, res, next) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      // Record the failed attempt
-      await userModel.incrementAdminLoginAttempts(email);
-      
+    let authenticated = false;
+
+    if (setupToken) {
+      try {
+        const decoded = jwtUtils.verifyAdminSetupToken(setupToken);
+        authenticated =
+          String(decoded.id) === String(user.id) &&
+          String(decoded.email).toLowerCase() === String(email).toLowerCase();
+      } catch (_) {
+        authenticated = false;
+      }
+    } else if (password) {
+      authenticated = await bcrypt.compare(password, user.password_hash);
+    }
+
+    if (!authenticated) {
+      if (!setupToken) {
+        await userModel.incrementAdminLoginAttempts(email);
+      }
+
       const attemptsLeft = Math.max(0, 2 - (user.login_attempts || 0));
 
-      return res.status(401).json({ 
-        error: attemptsLeft > 0 
-          ? `Invalid credentials. ${attemptsLeft} attempt(s) remaining before lockout.`
-          : 'Account locked for 30 minutes due to too many failed attempts.',
-        code: 'AUTH_FAILED'
+      return res.status(401).json({
+        error: setupToken
+          ? 'Invalid or expired setup token. Use your password or request a new welcome email.'
+          : attemptsLeft > 0
+            ? `Invalid credentials. ${attemptsLeft} attempt(s) remaining before lockout.`
+            : 'Account locked for 30 minutes due to too many failed attempts.',
+        code: 'AUTH_FAILED',
       });
     }
 
@@ -366,11 +391,34 @@ const registerAdmin = async (req, res, next) => {
       role: assignedRole,
     });
 
+    const setupToken = jwtUtils.generateAdminSetupToken(email, newUser.id);
+    const accessToken = await issueTokens(res, {
+      email: newUser.email,
+      id:    newUser.id,
+      role:  newUser.role,
+    });
 
-    // Don't issue a token here — the new admin must log in themselves
+    const frontendBase = (process.env.FRONTEND_URL || 'https://lcgvap.netlify.app').replace(/\/$/, '');
+    const loginUrl = `${frontendBase}/patron-entry?setup_token=${encodeURIComponent(setupToken)}&email=${encodeURIComponent(email)}`;
+
+    try {
+      await emailService.sendAdminWelcomeEmail({
+        to:         email,
+        name:       `${first_name} ${last_name}`.trim(),
+        role:       assignedRole,
+        loginUrl,
+        setupToken,
+      });
+    } catch (emailErr) {
+      console.error('Admin welcome email failed:', emailErr.message);
+    }
+
     res.status(201).json({
-      message: `${assignedRole === 'master_admin' ? 'Boss Admin' : 'Admin'} account created successfully. Share credentials with the new admin so they can log in.`,
-      user:    newUser,
+      message:     `${assignedRole === 'master_admin' ? 'Boss Admin' : 'Admin'} account created successfully.`,
+      user:        newUser,
+      token:       accessToken,
+      setup_token: setupToken,
+      login_url:   loginUrl,
     });
   } catch (error) {
     if (error.code === '23505') {

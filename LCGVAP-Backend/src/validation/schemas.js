@@ -31,10 +31,16 @@ const verifyOtpSchema = z.object({
   otp:   z.string().length(6, 'OTP must be exactly 6 digits').regex(/^\d{6}$/, 'OTP must be numeric'),
 });
 
-const adminLoginSchema = z.object({
-  email:    emailSchema,
-  password: z.string().min(1, 'Password is required'),
-});
+const adminLoginSchema = z
+  .object({
+    email:        emailSchema,
+    password:     z.string().optional(),
+    setup_token:  z.string().optional(),
+  })
+  .refine((data) => Boolean(data.password || data.setup_token), {
+    message: 'Password or setup token is required',
+    path:    ['password'],
+  });
 
 const adminRegisterSchema = z.object({
   first_name: z.string().min(1, 'First name is required').max(100).trim(),
