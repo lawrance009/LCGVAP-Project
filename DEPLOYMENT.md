@@ -1,115 +1,130 @@
-# LCGVAP Deployment Guide (Render + Vercel + Railway)
+# LCGVAP Deployment Guide
 
-This repo is set up for:
-- Backend: Render Web Service or Railway
-- Frontend: Vercel
+**Production:** Netlify (frontend) + Railway (backend, Postgres, Redis)
 
-## Railway (backend + Redis)
+| Service | URL |
+|---------|-----|
+| Frontend | https://lcgvap.netlify.app |
+| Backend API | https://lcgvap-project-production.up.railway.app |
 
-### Services
-1. **PostgreSQL** — add Railway Postgres (or use external `DATABASE_URL`)
-2. **Redis** — add Railway Redis plugin
-3. **Backend** — deploy from root directory `LCGVAP-Backend`
-   - Build: `npm install`
-   - Start: `npm start`
-   - Health check: `/health`
+---
 
-### Link Redis to the backend (required)
-Without this, the app tries `localhost:6379` and Redis will fail.
+## 1) Railway project services
 
-1. Open your **backend** service → **Variables**
-2. **Add Reference** → select your **Redis** service → choose **`REDIS_URL`**
-3. Redeploy the backend
+Create four services in one Railway project:
 
-Also set `NODE_ENV=production` on Railway (your logs showed `development`).
+1. **Backend** — GitHub repo, root directory `LCGVAP-Backend`
+2. **PostgreSQL** — Database → Add PostgreSQL
+3. **Redis** — Database → Add Redis
+4. *(Optional)* delete any duplicate frontend service on Railway if using Netlify
 
-### Backend env vars on Railway
-Same as Render (see section 2 below), plus:
-- `REDIS_URL=${{Redis.REDIS_URL}}` (reference from Redis plugin)
-- `PORT` is set automatically by Railway — do not hardcode
+### Backend service settings
 
-## 1) GitHub Security Checklist (before first push)
-
-- Ensure `.env` files are not tracked.
-- Keep only `.env.example` files in Git.
-- Rotate secrets if any were ever shared.
-- Enable GitHub secret scanning + Dependabot alerts.
-
-Quick check locally:
-
-```bash
-git status --short
-```
-
-If `.env` appears, stop and remove it from tracking before commit.
-
-## 2) Backend on Render
-
-### Service settings
 - Root directory: `LCGVAP-Backend`
-- Build command: `npm install`
-- Start command: `npm start`
-- Health check path: `/health`
+- Build: `npm install`
+- Start: `npm start`
+- Health check: `/health`
 
-### Required environment variables
+---
 
-- `NODE_ENV=production`
-- `PORT=5000` (Render may override internally)
-- `BASE_URL=https://<your-render-service>.onrender.com`
-- `CORS_ORIGINS=https://<your-vercel-domain>`
+## 2) Railway backend — variables
 
-- `DATABASE_URL=<render/supabase/neon postgres url>`
-  - OR set `DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD`
+### References (do NOT type URLs manually)
 
-- `JWT_ACCESS_SECRET=<strong random>`
-- `JWT_REFRESH_SECRET=<strong random>`
-- `JWT_ACCESS_EXPIRES=10m`
-- `JWT_REFRESH_EXPIRES=7d`
-- `FILE_ACCESS_SECRET=<strong random>`
+| Variable | Source |
+|----------|--------|
+| `DATABASE_URL` | Reference → **Postgres** → `DATABASE_URL` |
+| `REDIS_URL` | Reference → **Redis** → `REDIS_URL` |
 
-- `ADMIN_CREATION_SECRET=<strong random>`
-- `BOSS_ADMIN_MAX=3`
+### Typed values (copy exactly)
 
-- `EMAIL_USER=<smtp user>`
-- `EMAIL_PASS=<smtp password/app password>`
-
-- `REDIS_URL=<upstash rediss url>`
-
-### Optional tuning env vars
-- `DB_POOL_MAX=10`
-- `DB_POOL_MIN=2`
-- `DB_CONNECT_TIMEOUT_MS=5000`
-- `DB_IDLE_TIMEOUT_MS=30000`
-- `DB_STATEMENT_TIMEOUT_MS=7000`
-- `DB_QUERY_TIMEOUT_MS=7000`
-- `AUTH_RATE_LIMIT_MAX=10`
-- `MAX_UPLOAD_SIZE_MB=15`
-
-## 3) Frontend on Vercel
-
-### Project settings
-- Root directory: `LCGVAP-Frontend`
-- Build command: `npm run build`
-- Output directory: `dist`
-
-### Required environment variable
-- `VITE_API_URL=https://<your-render-service>.onrender.com`
-
-## 4) Post-deploy validation
-
-Run backend smoke checks against production API:
-
-```bash
-cd LCGVAP-Backend
-SMOKE_BASE_URL=https://<your-render-service>.onrender.com npm run smoke
+```
+CORS_ORIGINS=https://lcgvap.netlify.app
+BASE_URL=https://lcgvap-project-production.up.railway.app
+NODE_ENV=production
 ```
 
-Expected: all checks pass.
+### Secrets (generate your own)
 
-## 5) Ongoing workflow
+```powershell
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
 
-- Commit to feature branch
-- Open PR
-- Let Vercel preview build run
-- Merge to main for live deploy
+| Variable | Notes |
+|----------|--------|
+| `JWT_ACCESS_SECRET` | 64-byte hex |
+| `JWT_REFRESH_SECRET` | different 64-byte hex |
+| `ADMIN_CREATION_SECRET` | 32-byte hex |
+| `FILE_ACCESS_SECRET` | random string |
+| `EMAIL_USER` / `EMAIL_PASS` | Gmail app password (optional) |
 
+### Do NOT put on Railway backend
+
+- `VITE_API_URL` — Netlify only
+- `REDIS_URL=redis://localhost:6379`
+- Typed `DATABASE_URL` unless copied from Postgres Connect tab
+- `NODE_ENV=development`
+
+Redeploy backend after changing variables.
+
+---
+
+## 3) Initialize database (one time)
+
+New Railway Postgres is empty. Run schema from your machine:
+
+1. Railway → **Postgres** → **Connect** → copy **Public Network** URL
+2. PowerShell:
+
+```powershell
+cd LCGVAP-Backend
+$env:DATABASE_URL="postgresql://postgres:PASSWORD@HOST.railway.app:PORT/railway"
+npm run db:init
+```
+
+Expected: `Database init complete — all tables created.`
+
+---
+
+## 4) Netlify frontend
+
+1. Import repo from GitHub
+2. `netlify.toml` at repo root configures build automatically
+3. Environment variable:
+
+```
+VITE_API_URL=https://lcgvap-project-production.up.railway.app
+```
+
+Scopes: Production, Deploy Previews, Branch deploys
+
+4. **Deploys** → **Clear cache and deploy site** (required after env changes)
+
+---
+
+## 5) Post-deploy checks
+
+```powershell
+cd LCGVAP-Backend
+$env:SMOKE_BASE_URL="https://lcgvap-project-production.up.railway.app"
+npm run smoke
+```
+
+Browser: open https://lcgvap.netlify.app — universities, slides, FAQ should load.
+
+CORS test (browser console on Netlify site):
+
+```javascript
+fetch('https://lcgvap-project-production.up.railway.app/health').then(r=>r.json()).then(console.log)
+```
+
+---
+
+## 6) Local development
+
+```powershell
+cp LCGVAP-Backend/.env.example LCGVAP-Backend/.env
+cp LCGVAP-Frontend/.env.example LCGVAP-Frontend/.env
+```
+
+Never commit `.env` files.

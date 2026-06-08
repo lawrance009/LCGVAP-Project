@@ -18,11 +18,13 @@ ENV VITE_API_URL=$VITE_API_URL \
 
 RUN npm run build
 
-# --- serve static bundle
+# --- serve static bundle (nginx official image substitutes ${PORT} at startup)
 FROM nginx:alpine
 
+ENV PORT=80
+
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.docker.conf /etc/nginx/conf.d/default.conf
+COPY nginx.docker.conf.template /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 

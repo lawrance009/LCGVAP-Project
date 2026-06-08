@@ -1,5 +1,5 @@
 {
-  "name": "lcgvap-frontend",
+  "name": "lcgvap-backend",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
