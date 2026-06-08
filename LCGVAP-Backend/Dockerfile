@@ -10,6 +10,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY src ./src
+COPY database ./database
 
 RUN mkdir -p uploads logs
 

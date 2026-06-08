@@ -7,13 +7,34 @@
  */
 /* eslint-disable no-console */
 
-require('dotenv').config();
+const onRailway = Boolean(
+  process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID
+);
+
+if (!onRailway && process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 
-const INIT_DIR = path.resolve(__dirname, '../../../database/init');
+const resolveInitDir = () => {
+  const candidates = [
+    path.resolve(__dirname, '../../database/init'), // LCGVAP-Backend/database/init (Railway deploy root)
+    path.resolve(__dirname, '../../../database/init'), // monorepo database/init (local dev)
+  ];
+
+  for (const dir of candidates) {
+    if (fs.existsSync(path.join(dir, '010_schema.sql'))) {
+      return dir;
+    }
+  }
+
+  return candidates[0];
+};
+
+const INIT_DIR = resolveInitDir();
 
 const SQL_FILES = [
   '010_schema.sql',
@@ -23,22 +44,54 @@ const SQL_FILES = [
   '050_placeholder_fk_seed.sql',
 ];
 
+const isValidPostgresUrl = (value) =>
+  Boolean(value && /^postgres(ql)?:\/\//i.test(String(value).trim()));
+
 const needsSsl = (url) =>
   /railway\.app|railway\.internal|sslmode=require|neon\.tech|supabase/i.test(url);
 
-async function main() {
-  const connectionString = process.env.DATABASE_URL?.trim();
+/** Same resolution as src/config/db.js (DATABASE_URL ref or PGHOST/PG* refs) */
+const resolveDatabaseUrl = () => {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.DATABASE_PRIVATE_URL,
+    process.env.DATABASE_PUBLIC_URL,
+  ]
+    .map((v) => (v ? String(v).trim() : ''))
+    .filter(Boolean);
 
-  if (!connectionString) {
-    console.error('DATABASE_URL is required.');
-    console.error('Copy the Public URL from Railway → Postgres → Connect, then:');
-    console.error('  set DATABASE_URL=postgresql://...');
-    console.error('  npm run db:init');
-    process.exit(1);
+  for (const url of candidates) {
+    if (isValidPostgresUrl(url)) {
+      return url;
+    }
   }
 
-  if (!/^postgres(ql)?:\/\//i.test(connectionString)) {
-    console.error('DATABASE_URL must start with postgresql:// or postgres://');
+  const host = process.env.PGHOST || process.env.DB_HOST;
+  const port = process.env.PGPORT || process.env.DB_PORT || '5432';
+  const user = process.env.PGUSER || process.env.DB_USER || 'postgres';
+  const password = process.env.PGPASSWORD || process.env.DB_PASSWORD;
+  const database = process.env.PGDATABASE || process.env.DB_NAME || 'railway';
+
+  if (host) {
+    const auth = password
+      ? `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`
+      : `${encodeURIComponent(user)}@`;
+    return `postgresql://${auth}${host}:${port}/${database}`;
+  }
+
+  return null;
+};
+
+async function main() {
+  const connectionString = resolveDatabaseUrl();
+
+  if (!connectionString) {
+    console.error('No valid database URL found.');
+    console.error('Railway backend: Reference → Postgres → DATABASE_URL (delete any typed value).');
+    console.error('Or reference PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE from Postgres.');
+    console.error('Local PC: use Postgres → Connect → Public Network URL, then:');
+    console.error('  set DATABASE_URL=postgresql://...');
+    console.error('  npm run db:init');
     process.exit(1);
   }
 
