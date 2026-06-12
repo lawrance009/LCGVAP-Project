@@ -223,6 +223,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime:    process.uptime(),
     email:     emailStatus.configured ? 'configured' : 'missing_credentials',
+    transport: emailStatus.transport || undefined,
     smtp:      emailStatus.smtp_ok === true ? 'verified' : emailStatus.smtp_ok === false ? 'failed' : 'pending',
     smtp_error: emailStatus.smtp_error || undefined,
   });
