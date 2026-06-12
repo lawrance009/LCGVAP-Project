@@ -20,6 +20,8 @@ const DB_ERROR_MAP = {
   '23505': { status: 409, message: 'A record with this information already exists.' },
   '23503': { status: 400, message: 'Related record not found. Check the provided IDs.' },
   '23502': { status: 400, message: 'A required field is missing.' },
+  '22001': { status: 400, message: 'Invalid data length provided.' },
+  '23514': { status: 400, message: 'Invalid data format provided.' },
   '22P02': { status: 400, message: 'Invalid data format provided.' },
   '42703': { status: 400, message: 'Invalid field name provided.' },
 };

@@ -18,6 +18,13 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP;
 
+-- --- OTP hardening (bcrypt hashes + lockout columns) ---
+ALTER TABLE otp_tokens ALTER COLUMN otp TYPE VARCHAR(255);
+ALTER TABLE otp_tokens ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE otp_tokens ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE otp_tokens DROP CONSTRAINT IF EXISTS otp_tokens_otp_check;
+CREATE INDEX IF NOT EXISTS idx_otp_email_active ON otp_tokens(email, is_used, is_locked, expires_at);
+
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('graduate', 'admin', 'master_admin'));
 

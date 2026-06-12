@@ -6,7 +6,7 @@ const BRAND = require('../constants/branding');
 const sendEmail = async (to, subject, text, html) => {
   logger.info(`Sending email to ${to}`);
   const info = await sendMailMessage({ to, subject, text, html });
-  logger.info(`Email sent to ${to}`, { messageId: info.messageId });
+  logger.info(`Email sent to ${to}`, { messageId: info?.messageId || info?.id });
   return info;
 };
 
