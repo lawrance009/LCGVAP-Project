@@ -12,6 +12,7 @@ if (!process.env.RAILWAY_ENVIRONMENT && !process.env.RAILWAY_PROJECT_ID && proce
 }
 
 const { ensureUploadDirs } = require('./utils/ensureUploadDirs');
+const { ensureDbSchema } = require('./utils/ensureDbSchema');
 
 ensureUploadDirs();
 
@@ -38,6 +39,7 @@ const server = app.listen(PORT, () => {
 });
 
 (async () => {
+  await ensureDbSchema();
   await verifyMailTransport();
 
   const redisOk = await initRedis();

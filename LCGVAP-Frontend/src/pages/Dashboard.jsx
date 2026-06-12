@@ -70,7 +70,7 @@ const Dashboard = () => {
                 console.error('Verification failed:', error);
                 Swal.fire(
                     'Error!',
-                    'Failed to verify user.',
+                    error.response?.data?.error || 'Failed to verify user.',
                     'error'
                 );
             }

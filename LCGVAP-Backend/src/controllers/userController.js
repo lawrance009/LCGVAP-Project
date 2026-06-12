@@ -352,13 +352,17 @@ const verifyUser = async (req, res, next) => {
         const userDetails = await userModel.findPublicUserById(id);
 
         if (userDetails) {
-            await emailService.sendVerificationEmail(
-                user.email,
-                `${user.first_name} ${user.last_name}`,
-                userDetails.university_name,
-                user.graduation_year || 'N/A',
-                stats.verified
-            );
+            try {
+                await emailService.sendVerificationEmail(
+                    user.email,
+                    `${user.first_name} ${user.last_name}`,
+                    userDetails.university_name || 'Your University',
+                    userDetails.graduation_year || user.graduation_year || 'N/A',
+                    stats.verified
+                );
+            } catch (emailErr) {
+                console.error('Verification email failed (user still verified):', emailErr.message);
+            }
         }
 
         res.json({ message: 'User verified successfully', user: sanitizeUserForClient(user) });

@@ -285,7 +285,8 @@ const findPublicUserById = async (id) => {
       u.id, u.first_name, u.last_name, u.degree_type, u.profile_photo, u.bio,
       uni.name as university_name, 
       dept.name as department_name,
-      u.created_at
+            u.created_at,
+      u.graduation_year
     FROM users u
     LEFT JOIN universities uni ON u.university_id = uni.id
     LEFT JOIN departments dept ON u.department_id = dept.id
