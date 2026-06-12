@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import getFileUrl from '../utils/getFileUrl';
 import api from '../services/api';
 import FeaturedUniversitiesSection from '../components/FeaturedUniversitiesSection';
+import { BRAND } from '../constants/branding';
 
 // Fallback FAQs shown only when the admin has not published any yet.
 const DEFAULT_FAQS = [
@@ -88,7 +89,7 @@ const Home = () => {
     const heroContent = slides.length > 0 ? slides[currentSlide] : {
         title: "Verified Graduates",
         subtitle: "Veterans & Alumni",
-        description: "The official Liberian Cyprus Graduates Veteran Alumni Portal. Ensuring institutional integrity and preserving academic identity through secure verification.",
+        description: `${BRAND.portalName} — ${BRAND.fullName}. Ensuring institutional integrity and preserving academic identity through secure verification.`,
         image_url: null
     };
 
@@ -143,20 +144,6 @@ const Home = () => {
             backgroundSize: '40px 40px'
         }}>
 
-            {/* ================= TOP INSTITUTIONAL BANNER ================= */}
-            <motion.div
-                className="bg-indigo-600 text-white py-3 px-4 text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-            >
-                <div className="container mx-auto flex items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm tracking-wider font-medium">
-                    <span className="flex-shrink-0">🇱🇷</span>
-                    <span className="uppercase text-center">Official Liberian Cyprus Graduates Alumni Portal</span>
-                    <span className="flex-shrink-0">🇨🇾</span>
-                </div>
-            </motion.div>
-
             {/* ================= HERO SECTION ================= */}
             <section className="relative bg-white">
                 <div className="container mx-auto px-6 py-16 sm:py-24 lg:py-32 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -181,10 +168,13 @@ const Home = () => {
                         </motion.div>
 
                         {/* Heading */}
-                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-gray-900 leading-[1.1] mb-8">
+                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-gray-900 leading-[1.1] mb-4">
                             Verified<br/>
                             Graduates.
                         </h1>
+                        <p className="text-sm sm:text-base font-semibold text-indigo-700 mb-8 leading-snug">
+                            {BRAND.shortName} · {BRAND.portalSubtitle}
+                        </p>
 
                         <div className="h-1 w-24 bg-indigo-600 mb-8"></div>
 
@@ -223,7 +213,7 @@ const Home = () => {
                             {slides.length === 0 && (
                                 <img
                                     src="/hero-image.jpg"
-                                    alt="LCGVAP Graduates"
+                                    alt={`${BRAND.shortName} Graduates`}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                         e.target.onerror = null;
@@ -237,7 +227,7 @@ const Home = () => {
                             {slides.length > 0 && slides[currentSlide]?.image_url && (
                                 <img
                                     src={getFileUrl(slides[currentSlide].image_url)}
-                                    alt={slides[currentSlide].title || "LCGVAP Slide"}
+                                    alt={slides[currentSlide].title || `${BRAND.shortName} Slide`}
                                     className="w-full h-full object-cover transition-opacity duration-700"
                                 />
                             )}
@@ -288,9 +278,16 @@ const Home = () => {
                                 Why Verification Matters
                             </h2>
 
-                            <p className="text-xl text-gray-600 leading-relaxed mb-12">
-                                Institutional integrity is paramount. LCGVAP provides a secure, immutable record of academic achievement for all graduates.
+                            <p className="text-xl text-gray-600 leading-relaxed mb-8">
+                                Institutional integrity is paramount. {BRAND.shortName} provides a secure, immutable record of academic achievement for all graduates.
                             </p>
+
+                            <Link
+                                to="/about"
+                                className="inline-block px-8 py-4 border-2 border-indigo-600 text-indigo-600 font-bold text-sm uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all mb-12"
+                            >
+                                Learn About {BRAND.shortName}
+                            </Link>
 
                             {/* Credibility Stats */}
                             <div className="grid grid-cols-2 gap-6 sm:gap-12">
@@ -599,7 +596,7 @@ const Home = () => {
                             <div className="space-y-5 sm:space-y-8 text-gray-600">
                                 <div>
                                     <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">Official Email</p>
-                                    <p className="text-base sm:text-lg break-all">lcgvapliberiancyprusgraduatesv@gmail.com</p>
+                                    <p className="text-base sm:text-lg break-all">{BRAND.contactEmail}</p>
                                 </div>
 
                                 <div>

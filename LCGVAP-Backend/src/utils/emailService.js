@@ -1,5 +1,6 @@
 const logger = require('./logger');
 const { sendMailMessage } = require('./mailTransport');
+const BRAND = require('../constants/branding');
 
 // Send immediately so auth/OTP failures surface to the API (not silently queued).
 const sendEmail = async (to, subject, text, html) => {
@@ -12,14 +13,14 @@ const sendEmail = async (to, subject, text, html) => {
 
 const sendOtpEmail = async (to, name, otp, expiryMinutes = 10) => {
   // ... existing OTP email code ...
-  const subject = 'LCGVAP Login Verification Code';
-  const text = `Hello ${name},\n\nYour LCGVAP verification code is: ${otp}\nIt expires in ${expiryMinutes} minutes.\n\nIf you did not request this, please ignore this email.`;
+  const subject = `${BRAND.shortName} Login Verification Code`;
+  const text = `Hello ${name},\n\nYour ${BRAND.shortName} verification code is: ${otp}\nIt expires in ${expiryMinutes} minutes.\n\nIf you did not request this, please ignore this email.`;
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>LCGVAP Login Verification</title>
+  <title>${BRAND.shortName} Login Verification</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
 
@@ -33,7 +34,7 @@ const sendOtpEmail = async (to, name, otp, expiryMinutes = 10) => {
           <tr>
             <td style="background:#0f172a;padding:20px;text-align:center;">
               <h1 style="color:#ffffff;margin:0;font-size:20px;">
-                Liberian Cyprus Graduates Veteran Alumni Portal
+                ${BRAND.portalName}<br><span style="font-size:13px;font-weight:normal;opacity:0.9">${BRAND.fullName}</span>
               </h1>
             </td>
           </tr>
@@ -47,7 +48,7 @@ const sendOtpEmail = async (to, name, otp, expiryMinutes = 10) => {
               </p>
 
               <p style="font-size:15px;color:#555;line-height:1.6;">
-                We received a request to log in to your LCGVAP account.
+                We received a request to log in to your ${BRAND.shortName} account.
                 Please use the verification code below to complete your login.
               </p>
 
@@ -76,7 +77,7 @@ const sendOtpEmail = async (to, name, otp, expiryMinutes = 10) => {
                 <br>
                 • Do not share this code with anyone.
                 <br>
-                • LCGVAP administrators will never ask for your OTP.
+                • ${BRAND.shortName} administrators will never ask for your OTP.
               </p>
 
             </td>
@@ -85,7 +86,7 @@ const sendOtpEmail = async (to, name, otp, expiryMinutes = 10) => {
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:20px;text-align:center;font-size:12px;color:#777;">
-              © 2026 Liberian Cyprus Graduates Veteran Alumni Portal (LCGVAP)
+              © 2026 ${BRAND.portalName} (${BRAND.shortName})
               <br>
               Secure Identity Verification Platform
             </td>
@@ -105,7 +106,7 @@ const sendOtpEmail = async (to, name, otp, expiryMinutes = 10) => {
 
 const sendRegistrationAckEmail = async (to, name) => {
   const subject = 'Registration Received — Verification Pending';
-  const text = `Dear ${name},\n\nWe warmly acknowledge the successful submission of your registration to the Liberian Cyprus Graduates Veteran Alumni Portal (LCGVAP).\n\nAt this time, your application status is marked as Pending Verification.\n\nPlease note that registration does not automatically confirm membership. Our administrative team will carefully review your submitted information and academic credentials to ensure the integrity and authenticity of our community.\n\nOnce your profile has been reviewed and verified, you will receive a formal confirmation email.\n\n*** IMPORTANT: You will not be able to log into your account to request an OTP until you receive that confirmation email. ***\n\nWe sincerely appreciate your patience during this process.\n\nLCGVAP remains committed to building a credible and trusted network of Liberian graduates in Cyprus and beyond.\n\nWith respect,\n\nLCGVAP Administration`;
+  const text = `Dear ${name},\n\nWe warmly acknowledge the successful submission of your registration to the ${BRAND.fullName} (${BRAND.shortName}).\n\nAt this time, your application status is marked as Pending Verification.\n\nPlease note that registration does not automatically confirm membership. Our administrative team will carefully review your submitted information and academic credentials to ensure the integrity and authenticity of our community.\n\nOnce your profile has been reviewed and verified, you will receive a formal confirmation email.\n\n*** IMPORTANT: You will not be able to log into your account to request an OTP until you receive that confirmation email. ***\n\nWe sincerely appreciate your patience during this process.\n\n${BRAND.shortName} remains committed to building a credible and trusted network of Liberian graduates in Cyprus and beyond.\n\nWith respect,\n\n${BRAND.shortName} Administration`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -116,7 +117,7 @@ const sendRegistrationAckEmail = async (to, name) => {
 <tr><td style="padding:40px;">
 <h2 style="color:#111827;font-size:24px;margin-bottom:20px;">Registration Received</h2>
 <p style="font-size:16px;color:#4b5563;line-height:1.6;">Dear ${name},</p>
-<p style="font-size:16px;color:#4b5563;line-height:1.6;">We warmly acknowledge the successful submission of your registration to the Liberian Cyprus Graduates Veteran Alumni Portal (LCGVAP).</p>
+<p style="font-size:16px;color:#4b5563;line-height:1.6;">We warmly acknowledge the successful submission of your registration to the ${BRAND.fullName} (${BRAND.shortName}).</p>
 <div style="background-color:#fffbeb;border:1px solid #fcd34d;padding:15px;border-radius:6px;margin:20px 0;">
 <p style="margin:0;color:#92400e;font-weight:bold;">Status: Pending Verification</p>
 </div>
@@ -131,15 +132,15 @@ const sendRegistrationAckEmail = async (to, name) => {
 
 <p style="font-size:16px;color:#4b5563;line-height:1.6;">We sincerely appreciate your patience during this process.</p>
 <hr style="margin:30px 0;border:none;border-top:1px solid #e5e7eb;" />
-<p style="font-size:14px;color:#6b7280;">With respect,<br><strong>LCGVAP Administration</strong><br>Liberian Cyprus Graduates Veteran Alumni Portal</p>
+<p style="font-size:14px;color:#6b7280;">With respect,<br><strong>${BRAND.shortName} Administration</strong><br>${BRAND.fullName}</p>
 </td></tr></table></td></tr></table></body></html>`;
 
   return sendEmail(to, subject, text, html);
 };
 
 const sendVerificationEmail = async (to, name, university, graduationYear, totalVerified) => {
-  const subject = 'Congratulations — You Are Now a Verified Member of LCGVAP';
-  const text = `Dear ${name},\n\nWe are pleased to inform you that your profile has been successfully reviewed and verified by the LCGVAP Administration.\n\nAs a graduate of ${university}, Class of ${graduationYear}, you are now officially recognized as a Verified Member of the Liberian Cyprus Graduates Veteran Alumni Portal.\n\nYour verification confirms that your credentials have been validated and your membership is formally acknowledged within our growing network.\n\nYou are now part of a trusted community of professionals strengthening collaboration, legacy, and opportunity among Liberian graduates.\n\nYou are 1 of ${totalVerified} verified graduates strengthening this network.\n\nWelcome to the family.\nLCGVAP stands with you — today and always.\n\nWith pride and respect,\n\nLCGVAP Administration`;
+  const subject = `Congratulations — You Are Now a Verified Member of ${BRAND.shortName}`;
+  const text = `Dear ${name},\n\nWe are pleased to inform you that your profile has been successfully reviewed and verified by the ${BRAND.shortName} Administration.\n\nAs a graduate of ${university}, Class of ${graduationYear}, you are now officially recognized as a Verified Member of the ${BRAND.fullName}.\n\nYour verification confirms that your credentials have been validated and your membership is formally acknowledged within our growing network.\n\nYou are now part of a trusted community of professionals strengthening collaboration, legacy, and opportunity among Liberian graduates.\n\nYou are 1 of ${totalVerified} verified graduates strengthening this network.\n\nWelcome to the family.\n${BRAND.shortName} stands with you — today and always.\n\nWith pride and respect,\n\n${BRAND.shortName} Administration`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -150,24 +151,24 @@ const sendVerificationEmail = async (to, name, university, graduationYear, total
 <tr><td style="padding:40px;">
 <h2 style="color:#111827;font-size:24px;margin-bottom:20px;">Congratulations!</h2>
 <p style="font-size:16px;color:#4b5563;line-height:1.6;">Dear ${name},</p>
-<p style="font-size:16px;color:#4b5563;line-height:1.6;">We are pleased to inform you that your profile has been successfully reviewed and verified by the LCGVAP Administration.</p>
+<p style="font-size:16px;color:#4b5563;line-height:1.6;">We are pleased to inform you that your profile has been successfully reviewed and verified by the ${BRAND.shortName} Administration.</p>
 <div style="background-color:#ecfdf5;border:1px solid #6ee7b7;padding:20px;border-radius:6px;margin:25px 0;text-align:center;">
 <p style="margin:0 0 5px 0;color:#065f46;font-size:18px;font-weight:bold;">Verified Member</p>
 <p style="margin:0;color:#047857;">${university} • Class of ${graduationYear}</p>
 </div>
 <p style="font-size:16px;color:#4b5563;line-height:1.6;">Your verification confirms that your credentials have been validated and your membership is formally acknowledged within our growing network.</p>
 <p style="font-size:16px;color:#4b5563;line-height:1.6;">You are 1 of <strong>${totalVerified}</strong> verified graduates strengthening this network.</p>
-<p style="font-size:16px;color:#4b5563;line-height:1.6;font-weight:bold;">Welcome to the family.<br>LCGVAP stands with you — today and always.</p>
+<p style="font-size:16px;color:#4b5563;line-height:1.6;font-weight:bold;">Welcome to the family.<br>${BRAND.shortName} stands with you — today and always.</p>
 <hr style="margin:30px 0;border:none;border-top:1px solid #e5e7eb;" />
-<p style="font-size:14px;color:#6b7280;">With pride and respect,<br><strong>LCGVAP Administration</strong><br>Liberian Cyprus Graduates Veteran Alumni Portal</p>
+<p style="font-size:14px;color:#6b7280;">With pride and respect,<br><strong>${BRAND.shortName} Administration</strong><br>${BRAND.fullName}</p>
 </td></tr></table></td></tr></table></body></html>`;
 
   return sendEmail(to, subject, text, html);
 };
 
 const sendRejectionEmail = async (to, name, reason) => {
-  const subject = 'Update Regarding Your LCGVAP Verification Status';
-  const text = `Dear ${name},\n\nWe are sorry, we found that you can't be verified at the moment. Please look at the verification process on the landing page of our website.\n\nWe are strict about this. We just noticed that you are not a graduate or it could be for another issue.\n\nReason for Rejection: ${reason}\n\nWith respect,\n\nLCGVAP Administration`;
+  const subject = `Update Regarding Your ${BRAND.shortName} Verification Status`;
+  const text = `Dear ${name},\n\nWe are sorry, we found that you can't be verified at the moment. Please look at the verification process on the landing page of our website.\n\nWe are strict about this. We just noticed that you are not a graduate or it could be for another issue.\n\nReason for Rejection: ${reason}\n\nWith respect,\n\n${BRAND.shortName} Administration`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -185,17 +186,17 @@ const sendRejectionEmail = async (to, name, reason) => {
 <p style="margin:0;color:#7f1d1d;">${reason}</p>
 </div>
 <hr style="margin:30px 0;border:none;border-top:1px solid #e5e7eb;" />
-<p style="font-size:14px;color:#6b7280;">With respect,<br><strong>LCGVAP Administration</strong><br>Liberian Cyprus Graduates Veteran Alumni Portal</p>
+<p style="font-size:14px;color:#6b7280;">With respect,<br><strong>${BRAND.shortName} Administration</strong><br>${BRAND.fullName}</p>
 </td></tr></table></td></tr></table></body></html>`;
 
   return sendEmail(to, subject, text, html);
 };
 
 const sendRejectionPurgeEmail = async (to, name, reason) => {
-  const subject = 'LCGVAP Application Declined — Account Removed';
+  const subject = `${BRAND.shortName} Application Declined — Account Removed`;
   const text = `Dear ${name},
 
-Your recent LCGVAP registration could not be approved after verification review.
+Your recent ${BRAND.shortName} registration could not be approved after verification review.
 
 Reason:
 ${reason}
@@ -206,7 +207,7 @@ If you correct the issue and have the right information/documents, you can regis
 Your next registration must use a valid email format.
 
 With respect,
-LCGVAP Administration`;
+${BRAND.shortName} Administration`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -217,7 +218,7 @@ LCGVAP Administration`;
 <tr><td style="padding:40px;">
 <h2 style="color:#111827;font-size:24px;margin-bottom:20px;">Application Declined</h2>
 <p style="font-size:16px;color:#4b5563;line-height:1.6;">Dear ${name},</p>
-<p style="font-size:16px;color:#4b5563;line-height:1.6;">Your recent LCGVAP registration could not be approved after verification review.</p>
+<p style="font-size:16px;color:#4b5563;line-height:1.6;">Your recent ${BRAND.shortName} registration could not be approved after verification review.</p>
 
 <div style="background-color:#fef2f2;border:1px solid #fca5a5;padding:15px;border-radius:6px;margin:20px 0;">
   <p style="margin:0 0 5px 0;color:#991b1b;font-weight:bold;">Reason:</p>
@@ -239,7 +240,7 @@ LCGVAP Administration`;
 </p>
 
 <hr style="margin:30px 0;border:none;border-top:1px solid #e5e7eb;" />
-<p style="font-size:14px;color:#6b7280;">With respect,<br><strong>LCGVAP Administration</strong><br>Liberian Cyprus Graduates Veteran Alumni Portal</p>
+<p style="font-size:14px;color:#6b7280;">With respect,<br><strong>${BRAND.shortName} Administration</strong><br>${BRAND.fullName}</p>
 </td></tr></table></td></tr></table></body></html>`;
 
   return sendEmail(to, subject, text, html);
@@ -247,10 +248,10 @@ LCGVAP Administration`;
 
 const sendAdminWelcomeEmail = async ({ to, name, role, loginUrl, setupToken }) => {
   const roleLabel = role === 'master_admin' ? 'Master Admin (Boss Admin)' : 'Admin';
-  const subject = 'LCGVAP Admin Account Created — Login Details';
+  const subject = `${BRAND.shortName} Admin Account Created — Login Details`;
   const text = `Dear ${name},
 
-Your LCGVAP ${roleLabel} account has been created.
+Your ${BRAND.shortName} ${roleLabel} account has been created.
 
 Login email: ${to}
 
@@ -265,7 +266,7 @@ ${setupToken}
 
 Keep this email private. Do not share your setup token.
 
-LCGVAP Administration`;
+${BRAND.shortName} Administration`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -286,7 +287,7 @@ LCGVAP Administration`;
   <p style="margin:0 0 8px 0;color:#334155;font-weight:bold;font-size:13px;">One-time setup token (72h):</p>
   <p style="margin:0;color:#0f172a;font-family:monospace;font-size:12px;">${setupToken}</p>
 </div>
-<p style="font-size:12px;color:#64748b;">Keep this email private. LCGVAP will never ask you to share this token.</p>
+<p style="font-size:12px;color:#64748b;">Keep this email private. ${BRAND.shortName} will never ask you to share this token.</p>
 </td></tr></table></td></tr></table></body></html>`;
 
   return sendEmail(to, subject, text, html);

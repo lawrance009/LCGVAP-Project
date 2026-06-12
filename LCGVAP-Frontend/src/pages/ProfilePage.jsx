@@ -1,7 +1,7 @@
 /**
  * ProfilePage.jsx  (replaces Profile.jsx)
  * ---------------------------------------------------------------
- * LCGVAP — User Profile Display System
+ * VCLGC — User Profile Display System
  *
  * ARCHITECTURE SUMMARY:
  *   - Degrees belong to users.
@@ -46,7 +46,7 @@ const MOCK_DATA = {
     id: 1,
     first_name: 'John',
     last_name: 'Doe',
-    email: 'john.doe@lcgvap.org',
+    email: 'john.doe@example.com',
     bio: 'Liberian engineer and alumnus of the Cyprus-Liberia Academic Program. Passionate about sustainable infrastructure.',
     profile_photo: null,
     is_verified: true,
@@ -251,7 +251,7 @@ const ProfilePage = () => {
     <main className="max-w-4xl mx-auto px-4 py-8 space-y-6" id="profile-page">
 
       {/* ── Page Title (screen-reader only) ──────────── */}
-      <h1 className="sr-only">My Profile — LCGVAP</h1>
+      <h1 className="sr-only">My Profile — VCLGC Alumni Portal</h1>
 
       {/* ── SECTION 1: Profile Header ─────────────────── */}
       {!loadingProfile && profile && (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.jpeg';
+import { BRAND } from '../constants/branding';
 
 const Navbar = ({ user, logout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ const Navbar = ({ user, logout }) => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
     { name: 'News', path: '/news' },
     { name: 'Leadership', path: '/leadership' },
     { name: 'Directory', path: '/directory' },
@@ -32,19 +34,23 @@ const Navbar = ({ user, logout }) => {
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b-2 border-gray-100">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between h-20">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
             <img
               src={logo}
-              alt="LCGVAP"
-              className="h-12 w-12 object-cover"
+              alt={BRAND.shortName}
+              className="h-10 w-10 sm:h-12 sm:w-12 object-cover flex-shrink-0"
             />
-            <div>
-              <h1 className="text-base font-black text-gray-900 leading-tight tracking-tight uppercase">LCGVAP</h1>
-              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.15em]">Alumni Portal</p>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-black text-gray-900 leading-tight tracking-tight uppercase truncate">
+                {BRAND.shortName}
+              </h1>
+              <p className="text-[9px] sm:text-[10px] font-bold text-indigo-600 uppercase tracking-wider leading-tight truncate">
+                {BRAND.portalSubtitle}
+              </p>
             </div>
           </Link>
 

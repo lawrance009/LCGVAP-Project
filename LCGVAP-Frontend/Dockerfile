@@ -9,8 +9,8 @@ RUN npm ci
 COPY . .
 
 ARG VITE_API_URL=http://localhost:3001
-ARG VITE_SYSTEM_NAME=LCGVAP
-ARG VITE_SYSTEM_FULL_NAME=Liberian Cyprus Graduates Veteran Alumina Platform
+ARG VITE_SYSTEM_NAME=VCLGC
+ARG VITE_SYSTEM_FULL_NAME=Veteran Community of Liberian Graduates from Cyprus
 
 ENV VITE_API_URL=$VITE_API_URL \
     VITE_SYSTEM_NAME=$VITE_SYSTEM_NAME \

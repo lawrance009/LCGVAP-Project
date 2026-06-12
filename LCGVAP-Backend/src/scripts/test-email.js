@@ -13,6 +13,7 @@
  */
 require('dotenv').config();
 
+const BRAND = require('../constants/branding');
 const { verifyMailTransport, sendMailMessage } = require('../utils/mailTransport');
 
 const to = process.argv[2]?.trim() || process.env.EMAIL_USER;
@@ -36,7 +37,7 @@ const to = process.argv[2]?.trim() || process.env.EMAIL_USER;
 
   await sendMailMessage({
     to,
-    subject: 'LCGVAP SMTP test',
+    subject: `${BRAND.shortName} SMTP test`,
     text: 'If you received this, email is working.',
     html: '<p>If you received this, <strong>email is working</strong>.</p>',
   });

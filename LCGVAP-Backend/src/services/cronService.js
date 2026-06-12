@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const newsModel = require('../models/newsModel');
 const emailService = require('../utils/emailService');
+const BRAND = require('../constants/branding');
 
 const checkBirthdays = async () => {
   console.log('Running Birthday Check...');
@@ -28,7 +29,7 @@ const checkBirthdays = async () => {
     const totalVerified = stats.verified;
 
     for (const user of celebrants) {
-      const subject = 'Happy Birthday from LCGVAP! 🎉';
+      const subject = `Happy Birthday from ${BRAND.shortName}! 🎉`;
       const currentYear = new Date().getFullYear();
 
       // Construct HTML with replacements
@@ -50,7 +51,7 @@ const checkBirthdays = async () => {
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Happy Birthday from LCGVAP</title>
+  <title>Happy Birthday from ${BRAND.shortName}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8;padding:40px 0;">
@@ -61,7 +62,7 @@ const checkBirthdays = async () => {
           <tr>
             <td style="background:#0f172a;padding:20px;text-align:center;">
               <h1 style="color:#ffffff;margin:0;font-size:20px;">
-                Liberian Cyprus Graduates Veteran Alumni Portal
+                ${BRAND.portalName}<br><span style="font-size:13px;font-weight:normal;opacity:0.9">${BRAND.fullName}</span>
               </h1>
             </td>
           </tr>
@@ -81,7 +82,7 @@ const checkBirthdays = async () => {
                 </h2>
               </div>
               <p style="font-size:16px;color:#444;line-height:1.7;">
-                As a verified member of LCGVAP, you are part of something larger —
+                As a verified member of ${BRAND.shortName}, you are part of something larger —
                 a growing and powerful network of Liberian graduates who studied in Northern Cyprus
                 and continue to impact communities across the world.
               </p>
@@ -97,14 +98,14 @@ const checkBirthdays = async () => {
               </p>
               <p style="font-size:15px;color:#555;line-height:1.7;">
                 May this new year bring continued growth, opportunity, purpose,
-                and fulfillment. LCGVAP stands with you — not only today,
+                and fulfillment. ${BRAND.shortName} stands with you — not only today,
                 but for a lifetime.
               </p>
               <hr style="margin:30px 0;border:none;border-top:1px solid #e5e7eb;" />
               <p style="font-size:14px;color:#777;">
                 With appreciation and pride,
                 <br><br>
-                <strong>The LCGVAP Team</strong>
+                <strong>The ${BRAND.shortName} Team</strong>
                 <br>
                 A Lifelong Community of Verified Graduates
               </p>
@@ -113,7 +114,7 @@ const checkBirthdays = async () => {
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:20px;text-align:center;font-size:12px;color:#777;">
-              © ${currentYear} Liberian Cyprus Graduates Veteran Alumni Portal
+              © ${currentYear} ${BRAND.portalName}
               <br>
               Building a Stronger Alumni Family, Together.
             </td>
@@ -125,7 +126,7 @@ const checkBirthdays = async () => {
 </body>
 </html>`;
 
-      const text = `Happy Birthday ${user.first_name}! From LCGVAP.`;
+      const text = `Happy Birthday ${user.first_name}! From ${BRAND.shortName}.`;
 
       try {
         await emailService.sendEmail(user.email, subject, text, htmlContent);

@@ -164,7 +164,7 @@ const AdminManageAdmins = () => {
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                         <input name="email" type="email" required value={formData.email} onChange={handleChange}
                                             className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                                            placeholder="admin@lcgvap.org" />
+                                            placeholder="admin@example.com" />
                                     </div>
                                 </div>
                                 {/* Password */}

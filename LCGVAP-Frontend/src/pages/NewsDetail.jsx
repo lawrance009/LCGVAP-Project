@@ -51,7 +51,7 @@ const NewsDetail = () => {
                     />
                 ) : (
                     <div className="w-full h-full bg-indigo-900 flex items-center justify-center">
-                        <span className="text-indigo-200 text-6xl opacity-20 font-bold">LCGVAP NEWS</span>
+                        <span className="text-indigo-200 text-6xl opacity-20 font-bold">VCLGC NEWS</span>
                     </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-70"></div>

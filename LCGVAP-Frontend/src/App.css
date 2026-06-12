@@ -132,15 +132,15 @@ button:active::before, a:active::before {
   }
 }
 
-/* ========== Smooth Links ========== */
-a {
+/* ========== Smooth Links (text links only — not buttons) ========== */
+a:not([class*="px-"]):not([class*="py-"]) {
   color: #4f46e5;
   text-decoration: none;
   position: relative;
   transition: color 0.3s ease;
 }
 
-a::after {
+a:not([class*="px-"]):not([class*="py-"])::after {
   content: '';
   position: absolute;
   width: 0;
@@ -151,8 +151,38 @@ a::after {
   transition: width 0.3s ease;
 }
 
-a:hover::after {
+a:not([class*="px-"]):not([class*="py-"]):hover::after {
   width: 100%;
+}
+
+/* ========== Buttons: white text on hover (colored / dark fills) ========== */
+button::after,
+a[class*="px-"]::after,
+a[class*="py-"]::after {
+  display: none;
+}
+
+button[class*="bg-indigo"]:hover:not(:disabled),
+button[class*="bg-gray-900"]:hover:not(:disabled),
+button[class*="bg-red"]:hover:not(:disabled),
+button[class*="bg-green"]:hover:not(:disabled),
+button[class*="bg-blue"]:hover:not(:disabled),
+button[class*="hover:bg-indigo"]:hover:not(:disabled),
+button[class*="hover:bg-gray-900"]:hover:not(:disabled),
+button[class*="hover:bg-red"]:hover:not(:disabled),
+button[class*="hover:bg-green"]:hover:not(:disabled),
+button[class*="hover:bg-blue"]:hover:not(:disabled),
+a[class*="bg-indigo"]:hover,
+a[class*="bg-gray-900"]:hover,
+a[class*="bg-red"]:hover,
+a[class*="bg-green"]:hover,
+a[class*="bg-blue"]:hover,
+a[class*="hover:bg-indigo"]:hover,
+a[class*="hover:bg-gray-900"]:hover,
+a[class*="hover:bg-red"]:hover,
+a[class*="hover:bg-green"]:hover,
+a[class*="hover:bg-blue"]:hover {
+  color: #ffffff !important;
 }
 
 /* ========== Read More ========== */

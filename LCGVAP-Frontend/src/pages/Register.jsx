@@ -121,7 +121,7 @@ const Register = () => {
                     </h1>
                     <div className="bg-gray-50 border-l-4 border-cyan-400 p-4 sm:p-8">
                         <p className="text-base sm:text-xl text-gray-600 leading-relaxed">
-                            Registration does not automatically grant access. All graduate credentials will be strictly verified by the LCGVAP Administration before login access is granted.
+                            Registration does not automatically grant access. All graduate credentials will be strictly verified by the VCLGC Administration before login access is granted.
                         </p>
                     </div>
                 </div>

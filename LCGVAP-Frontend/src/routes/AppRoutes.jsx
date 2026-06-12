@@ -27,6 +27,7 @@ import AdminNews from '../pages/admin/AdminNews';
 import Leadership from '../pages/Leadership';
 import AdminLeadership from '../pages/admin/AdminLeadership';
 import AdminRegister from '../pages/AdminRegister';
+import About from '../pages/About';
 import AdminManageAdmins from '../pages/admin/AdminManageAdmins';
 
 // Placeholder Pages
@@ -38,6 +39,7 @@ const AppRoutes = () => {
             {/* Public Routes */}
             <Route element={<PublicLayout />}>
                 <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/news" element={<News />} />
                 <Route path="/news/:id" element={<NewsDetail />} />
                 <Route path="/leadership" element={<Leadership />} />

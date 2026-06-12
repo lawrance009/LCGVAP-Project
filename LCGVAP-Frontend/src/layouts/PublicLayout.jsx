@@ -1,7 +1,9 @@
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
+import SiteHeaderBanner from '../components/SiteHeaderBanner';
 import logo from '../assets/logo.jpeg';
+import { BRAND } from '../constants/branding';
 
 const PublicLayout = () => {
     const { user, logout } = useAuth();
@@ -10,6 +12,7 @@ const PublicLayout = () => {
         <div className="min-h-screen flex flex-col bg-white">
             {/* Navbar */}
             <Navbar user={user} logout={logout} />
+            <SiteHeaderBanner />
 
             {/* Main Content */}
             <main className="flex-grow">
@@ -27,18 +30,20 @@ const PublicLayout = () => {
                 <div className="flex items-center gap-3 mb-4">
                     <img
                         src={logo}
-                        alt="LCGVAP Logo"
+                        alt={`${BRAND.shortName} Logo`}
                         className="h-10 w-10 rounded-full border border-gray-700"
                     />
-                    <h3 className="text-lg font-bold text-white">
-                        LCGVAP
-                    </h3>
+                    <div>
+                        <h3 className="text-lg font-bold text-white uppercase">
+                            {BRAND.shortName}
+                        </h3>
+                        <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider">
+                            {BRAND.portalSubtitle}
+                        </p>
+                    </div>
                 </div>
                 <p className="text-sm leading-relaxed">
-                    The official alumni verification registry for Liberian
-                    graduates in Northern Cyprus. This platform facilitates
-                    institutional credential confirmation and academic identity
-                    validation.
+                    {BRAND.description}
                 </p>
             </div>
 
@@ -48,6 +53,11 @@ const PublicLayout = () => {
                     Registry Access
                 </h4>
                 <ul className="!text-white space-y-3 text-sm">
+                    <li>
+                        <Link to="/about" className="!text-white hover:text-white transition-colors">
+                            About
+                        </Link>
+                    </li>
                     <li>
                         <Link to="/" className="!text-white hover:text-white transition-colors">
                             Home
@@ -72,7 +82,7 @@ const PublicLayout = () => {
                     Verification Office
                 </h4>
                 <div className="space-y-2 text-sm">
-                    <p>lcgvapliberiancyprusgraduatesv@gmail.com</p>
+                    <p>{BRAND.contactEmail}</p>
                     <p>Processing Window: 2–5 Business Days</p>
                     <p>Monrovia, Republic of Liberia</p>
                 </div>
@@ -82,7 +92,7 @@ const PublicLayout = () => {
 
         {/* Footer Bottom */}
         <div className="border-t border-gray-800 mt-12 pt-6 text-xs text-gray-500 text-center leading-relaxed">
-            <p>© {new Date().getFullYear()} Liberian Cyprus Graduates Alumni Verification Portal
+            <p>© {new Date().getFullYear()} {BRAND.portalName} — {BRAND.fullName}.
             All rights reserved.</p>
             <p>This platform operates solely for alumni
             credential validation and institutional verification purposes.</p>

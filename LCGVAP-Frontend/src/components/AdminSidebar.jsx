@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Swal from 'sweetalert2';
 import logo from '../assets/logo.jpeg';
+import { BRAND } from '../constants/branding';
 import { 
     LayoutDashboard, 
     Building2, 
@@ -87,13 +88,13 @@ const AdminSidebar = ({ isMobileOpen, setIsMobileOpen, isCollapsed, setIsCollaps
                         {/* Logo */}
                         <img
                             src={logo}
-                            alt="LCGVAP"
+                            alt={BRAND.shortName}
                             className="w-12 h-12 object-cover border-2 border-indigo-400 flex-shrink-0"
                         />
                         {!isCollapsed && (
                             <div>
                                 <h2 className="text-xl font-black text-white whitespace-nowrap uppercase tracking-wider">
-                                    LCGVAP
+                                    {BRAND.shortName}
                                 </h2>
                                 <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider whitespace-nowrap">Admin Portal</p>
                                 {isBossAdmin && (

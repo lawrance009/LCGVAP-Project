@@ -28,7 +28,7 @@ const PORT = process.env.PORT || 5000;
 
 // ── Start the server ──────────────────────────────────────────
 const server = app.listen(PORT, () => {
-  logger.info('LCGVAP Backend started', {
+  logger.info('VCLGC Backend started', {
     port:        PORT,
     environment: process.env.NODE_ENV || 'development',
   });

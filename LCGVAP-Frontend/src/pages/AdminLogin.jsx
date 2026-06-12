@@ -145,7 +145,7 @@ const AdminLogin = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     className="block w-full pl-16 pr-6 py-5 border-2 border-gray-200 placeholder-gray-400 text-gray-900 text-lg focus:outline-none focus:border-indigo-600 transition-all bg-white"
-                                    placeholder="admin@lcgvap.org"
+                                    placeholder="admin@example.com"
                                 />
                             </div>
                         </div>
