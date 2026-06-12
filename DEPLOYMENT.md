@@ -87,18 +87,47 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 Redeploy backend after changing variables.
 
-### Email on Railway (Gmail)
+### Email on Railway
 
-1. Google Account → **Security** → turn on **2-Step Verification**
-2. **App passwords** → create one for "Mail" → copy the 16-character code
-3. Railway **backend** → **Variables** → add exactly:
-   - `EMAIL_USER` = your Gmail address
-   - `EMAIL_PASS` = the 16-character app password (paste with or without spaces — the server strips spaces)
-4. **Redeploy** the backend (required — env vars are read at startup)
-5. Open **Deploy Logs** and confirm you see `SMTP connection verified`. If you see `SMTP verification failed`, the app password or Gmail address is wrong.
-6. Quick check: `GET https://lcgvap-project-production.up.railway.app/health` should show `"email": "configured"`
+Gmail App Passwords **often fail on Railway** even when copied correctly. If you keep seeing `SMTP verification FAILED`, use **Brevo (recommended)** below.
 
-**Do not** use your normal Gmail login password — only an App Password works.
+#### Option A — Brevo (free, works reliably on Railway)
+
+1. Sign up at [https://www.brevo.com](https://www.brevo.com) (free tier)
+2. **Senders & IP** → **Senders** → add and verify your email (they email you a confirmation link)
+3. **SMTP & API** → copy your **SMTP key** (not your Brevo login password)
+4. Railway **backend** → **Variables**:
+
+```
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+EMAIL_USER=your-brevo-login-email@gmail.com
+EMAIL_PASS=your-brevo-smtp-key
+EMAIL_FROM=the-verified-sender@gmail.com
+```
+
+5. **Redeploy** → logs should show `SMTP connection verified`
+6. Check: `/health` should show `"smtp": "verified"`
+
+#### Option B — Gmail (often problematic on cloud hosts)
+
+1. Google Account → **Security** → **2-Step Verification** ON
+2. [App passwords](https://myaccount.google.com/apppasswords) → create for Mail
+3. Railway variables: `EMAIL_USER` + `EMAIL_PASS` (16-char app password; spaces OK)
+4. **Redeploy** → look for `SMTP connection verified`
+
+**Do not** use your normal Gmail login password.
+
+Test locally before Railway:
+
+```powershell
+cd LCGVAP-Backend
+$env:EMAIL_USER="you@gmail.com"
+$env:EMAIL_PASS="your-app-password"
+npm run email:test
+```
+
+If local test fails too, the password is wrong. If local works but Railway fails, switch to Brevo.
 
 ---
 

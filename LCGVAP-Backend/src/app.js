@@ -216,12 +216,15 @@ app.get('/private/:filename', (req, res) => {
 // ── Health Check (/health) ────────────────────────────────────
 // Fast ping — confirms the process is alive (used by Docker/load balancers)
 app.get('/health', (req, res) => {
-  const { isEmailConfigured } = require('./utils/mailTransport');
+  const { getEmailStatus } = require('./utils/mailTransport');
+  const emailStatus = getEmailStatus();
   res.status(200).json({
     status:    'ok',
     timestamp: new Date().toISOString(),
     uptime:    process.uptime(),
-    email:     isEmailConfigured() ? 'configured' : 'missing_credentials',
+    email:     emailStatus.configured ? 'configured' : 'missing_credentials',
+    smtp:      emailStatus.smtp_ok === true ? 'verified' : emailStatus.smtp_ok === false ? 'failed' : 'pending',
+    smtp_error: emailStatus.smtp_error || undefined,
   });
 });
 
