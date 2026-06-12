@@ -198,10 +198,6 @@ const AdminVerifiedGraduates = () => {
                                         <label className="text-xs font-semibold text-gray-500 uppercase">Degree Type</label>
                                         <p className="font-medium text-gray-800">{selectedGraduate.degree_type}</p>
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-500 uppercase">Advisor</label>
-                                        <p className="font-medium text-gray-800">{selectedGraduate.advisor_first} {selectedGraduate.advisor_last}</p>
-                                    </div>
                                 </div>
                             </div>
 

@@ -49,6 +49,10 @@ router.delete('/me/degrees/:degreeId', authenticate, degreeController.deleteDegr
 // -------------------------------------------------------
 router.get('/:userId/degrees', degreeController.getPublicUserDegrees);
 
+// Signed private file access — must stay public so window.open() works
+// (browser navigation cannot attach the Bearer access token).
+router.get('/uploads/protected/:filename', userController.getProtectedUpload);
+
 // -------------------------------------------------------
 // AUTHENTICATED ROUTES (all routes below require login)
 // -------------------------------------------------------
@@ -57,7 +61,6 @@ router.use(authenticate);
 // --- My Profile ---
 router.get('/me', userController.getProfile);
 router.get('/files/sign', userController.signPrivateFileUrl);
-router.get('/uploads/protected/:filename', userController.getProtectedUpload);
 router.put('/me',
     upload.fields([
         { name: 'profile_photo', maxCount: 1 },

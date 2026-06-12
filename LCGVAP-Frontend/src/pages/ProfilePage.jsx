@@ -121,7 +121,6 @@ const ProfilePage = () => {
   // Supporting dropdowns (lazy-load universities etc.)
   const [universities, setUniversities] = useState([]);
   const [departments,  setDepartments]  = useState([]);
-  const [advisors,     setAdvisors]     = useState([]);
 
   // ── Fetch Profile ──────────────────────────────────────────
   const fetchProfile = useCallback(async () => {
@@ -170,14 +169,12 @@ const ProfilePage = () => {
   const fetchDropdowns = useCallback(async () => {
     if (MOCK_MODE) return;
     try {
-      const [uniRes, deptRes, advRes] = await Promise.allSettled([
+      const [uniRes, deptRes] = await Promise.allSettled([
         api.get('/universities'),
         api.get('/departments'),
-        api.get('/advisors'),
       ]);
       if (uniRes.status  === 'fulfilled') setUniversities(uniRes.value.data  || []);
       if (deptRes.status === 'fulfilled') setDepartments(deptRes.value.data  || []);
-      if (advRes.status  === 'fulfilled') setAdvisors(advRes.value.data      || []);
     } catch (err) {
       console.warn('Dropdown fetch failed:', err);
     }
@@ -384,7 +381,6 @@ const ProfilePage = () => {
             <AddDegreeForm
               universities={universities}
               departments={departments}
-              advisors={advisors}
               onSubmit={handleAddDegree}
               onCancel={() => setShowAddDegree(false)}
               loading={savingDegree}

@@ -6,7 +6,6 @@
  * Props:
  *   universities {Array}
  *   departments  {Array}
- *   advisors     {Array}
  *   onSubmit     {fn(formData)}
  *   onCancel     {fn}
  *   loading      {boolean}
@@ -27,12 +26,11 @@ const DEGREE_TYPES = [
 const CURRENT_YEAR = new Date().getFullYear();
 const GRAD_YEARS   = Array.from({ length: 60 }, (_, i) => CURRENT_YEAR - i);
 
-const AddDegreeForm = ({ universities = [], departments = [], advisors = [], onSubmit, onCancel, loading }) => {
+const AddDegreeForm = ({ universities = [], departments = [], onSubmit, onCancel, loading }) => {
   const [form, setForm]         = useState({
     degree_type:     '',
     university_id:   '',
     department_id:   '',
-    advisor_id:      '',
     graduation_year: '',
     field_of_study:  '',
   });

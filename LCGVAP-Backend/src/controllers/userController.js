@@ -185,15 +185,19 @@ const getProtectedUpload = async (req, res, next) => {
         if (!token) {
             return res.status(401).json({ error: 'Missing file access token.' });
         }
-        const decoded = verifyFileAccessToken(token);
+
+        let decoded;
+        try {
+            decoded = verifyFileAccessToken(token);
+        } catch {
+            return res.status(401).json({ error: 'Invalid or expired file access token.' });
+        }
+
         if (!decoded || decoded.typ !== 'file_access') {
             return res.status(401).json({ error: 'Invalid file access token.' });
         }
         if (decoded.filename !== requestedName) {
             return res.status(403).json({ error: 'File token does not match requested file.' });
-        }
-        if (String(decoded.uid) !== String(req.user.id) && req.user.role !== 'admin' && req.user.role !== 'master_admin') {
-            return res.status(403).json({ error: 'File token does not belong to this user.' });
         }
 
         const absolutePath = path.resolve(process.cwd(), 'uploads', requestedName);
@@ -206,25 +210,27 @@ const getProtectedUpload = async (req, res, next) => {
             return res.status(404).json({ error: 'File not found.' });
         }
 
-        const role = req.user?.role;
-        if (!role) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
+        const role = decoded.role;
+        const userId = decoded.uid;
+
+        // Admins can view any private file once they have a signed URL.
         if (role === 'admin' || role === 'master_admin') {
             await userModel.logFileAccessEvent(
-                req.user.id,
+                userId,
                 'PRIVATE_FILE_ACCESS',
                 null,
                 `Admin downloaded private file: ${requestedName}`,
                 req.ip
             );
+            res.setHeader('Content-Disposition', 'inline');
             return res.sendFile(absolutePath);
         }
+
         if (role !== 'graduate') {
             return res.status(403).json({ error: 'Access denied.' });
         }
 
-        const user = await userModel.findUserById(req.user.id);
+        const user = await userModel.findUserById(userId);
         if (!user) {
             return res.status(404).json({ error: 'User not found.' });
         }
@@ -233,7 +239,7 @@ const getProtectedUpload = async (req, res, next) => {
         if (user.profile_photo) ownFiles.add(normalizeStoredPath(user.profile_photo));
         if (user.degree_file) ownFiles.add(normalizeStoredPath(user.degree_file));
 
-        const degrees = await degreeModel.getDegreesByUserId(req.user.id);
+        const degrees = await degreeModel.getDegreesByUserId(userId);
         for (const degree of degrees) {
             if (degree.degree_file) {
                 ownFiles.add(normalizeStoredPath(degree.degree_file));
@@ -245,12 +251,13 @@ const getProtectedUpload = async (req, res, next) => {
         }
 
         await userModel.logFileAccessEvent(
-            req.user.id,
+            userId,
             'PRIVATE_FILE_ACCESS',
-            req.user.id,
+            userId,
             `Graduate downloaded own private file: ${requestedName}`,
             req.ip
         );
+        res.setHeader('Content-Disposition', 'inline');
         return res.sendFile(absolutePath);
     } catch (error) {
         next(error);

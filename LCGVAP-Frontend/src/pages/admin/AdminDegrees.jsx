@@ -8,7 +8,6 @@ import getFileUrl from '../../utils/getFileUrl';
 const AdminDegrees = () => {
     const [degrees, setDegrees] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [viewDoc, setViewDoc] = useState(null);
 
     useEffect(() => {
         fetchPending();
@@ -176,10 +175,7 @@ const AdminDegrees = () => {
                                                     onClick={async () => {
                                                         try {
                                                             const url = await getSignedFileUrl(getFileUrl(degree.degree_file));
-                                                            setViewDoc(viewDoc === degree.id ? null : degree.id);
-                                                            if (!viewDoc || viewDoc !== degree.id) {
-                                                                window.open(url, '_blank', 'noopener,noreferrer');
-                                                            }
+                                                            window.open(url, '_blank', 'noopener,noreferrer');
                                                         } catch (error) {
                                                             console.error('Failed to open degree file:', error);
                                                             Swal.fire('Error', 'Failed to open degree document.', 'error');
