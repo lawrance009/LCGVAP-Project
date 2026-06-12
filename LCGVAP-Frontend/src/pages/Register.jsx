@@ -4,11 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api'; // Direct API for dropdowns
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
+import DateOfBirthField from '../components/DateOfBirthField';
 
 const Register = () => {
     const { register } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const maxDateOfBirth = new Date().toISOString().split('T')[0];
+    const minDateOfBirth = '1950-01-01';
 
     // Dropdown Data
     const [universities, setUniversities] = useState([]);
@@ -106,7 +109,7 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white py-10 sm:py-16 lg:py-20 px-3 sm:px-6 lg:px-8 relative" style={{
+        <div className="min-h-screen bg-white py-10 sm:py-16 lg:py-20 px-3 sm:px-6 lg:px-8 relative text-left" style={{
             backgroundImage: `linear-gradient(rgba(229, 231, 235, 0.3) 1px, transparent 1px),
                              linear-gradient(90deg, rgba(229, 231, 235, 0.3) 1px, transparent 1px)`,
             backgroundSize: '40px 40px'
@@ -135,7 +138,7 @@ const Register = () => {
                             <p className="text-gray-600 text-base sm:text-lg">Submit your credentials for official review.</p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-12">
+                        <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-12 text-left">
 
                             {/* PERSONAL INFORMATION */}
                             <div>
@@ -169,8 +172,17 @@ const Register = () => {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="block text-xs font-bold text-gray-900 uppercase tracking-[0.15em]">Date of Birth</label>
-                                        <input type="date" name="date_of_birth" required onChange={handleChange}
-                                            className="w-full bg-white border-2 border-gray-200 px-4 sm:px-6 py-3 sm:py-4 text-gray-900 text-base sm:text-lg focus:border-indigo-600 focus:outline-none transition-all duration-200"
+                                        <DateOfBirthField
+                                            value={formData.date_of_birth}
+                                            min={minDateOfBirth}
+                                            max={maxDateOfBirth}
+                                            required
+                                            onChange={(next) => {
+                                                setFormData((prev) => ({ ...prev, date_of_birth: next }));
+                                                if (errors.date_of_birth) {
+                                                    setErrors((prev) => ({ ...prev, date_of_birth: null }));
+                                                }
+                                            }}
                                         />
                                     </div>
                                 </div>

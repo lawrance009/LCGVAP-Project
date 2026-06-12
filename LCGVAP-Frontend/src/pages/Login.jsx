@@ -83,7 +83,7 @@ const Login = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         onSubmit={handleRequestOtp}
-                        className="space-y-8"
+                        className="space-y-8 text-left"
                     >
                         <div className="space-y-3">
                             <label className="block text-xs font-bold text-gray-900 uppercase tracking-[0.15em]">
@@ -106,10 +106,10 @@ const Login = () => {
                             {loading ? (
                                 <>
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                    Sending Code...
+                                    Sending Otp...
                                 </>
                             ) : (
-                                'Send Login Code'
+                                'Send Otp'
                             )}
                         </button>
                         <div className="mt-12 pt-8 border-t-2 border-gray-100">
