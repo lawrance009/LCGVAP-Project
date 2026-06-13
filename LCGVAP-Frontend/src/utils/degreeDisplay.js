@@ -53,15 +53,16 @@ export const formatDegreeType = (type) => {
 };
 
 export const getPublicDegreeTypes = (person) => {
-  const fromVerified = parseDegreeTypes(person?.verified_degree_types);
-  if (fromVerified.length > 0) {
-    return uniqueSortedDegreeTypes(fromVerified);
+  const types = [];
+
+  if (Array.isArray(person?.verified_degrees)) {
+    types.push(...person.verified_degrees.map((degree) => degree.degree_type));
   }
 
-  if (Array.isArray(person?.verified_degrees) && person.verified_degrees.length > 0) {
-    return uniqueSortedDegreeTypes(
-      person.verified_degrees.map((degree) => degree.degree_type)
-    );
+  types.push(...parseDegreeTypes(person?.verified_degree_types));
+
+  if (types.length > 0) {
+    return uniqueSortedDegreeTypes(types);
   }
 
   if (person?.degree_type) {

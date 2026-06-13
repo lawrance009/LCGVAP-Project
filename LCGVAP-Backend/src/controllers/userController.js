@@ -117,17 +117,16 @@ const getGraduates = async (req, res, next) => {
             userModel.countAllVerifiedUsers(filters),
         ]);
 
-        const typesByUser = await degreeModel.getVerifiedDegreeTypesByUserIds(
-            graduates.map((grad) => grad.id)
-        );
+        const userIds = graduates.map((grad) => grad.id);
+        const degreesByUser = await degreeModel.getVerifiedDegreesByUserIds(userIds);
 
         const enrichedGraduates = graduates.map((grad) => {
-            const verifiedDegreeTypes =
-                typesByUser[grad.id] ||
-                degreeModel.normalizeDegreeTypesArray(grad.verified_degree_types);
+            const verifiedDegrees = degreesByUser[grad.id] || [];
+            const verifiedDegreeTypes = verifiedDegrees.map((degree) => degree.degree_type);
 
             return {
                 ...grad,
+                verified_degrees: verifiedDegrees,
                 verified_degree_types: verifiedDegreeTypes,
                 is_premium_veteran: degreeModel.computeIsPremiumVeteran(verifiedDegreeTypes),
             };
@@ -183,6 +182,8 @@ const getPublicUserProfile = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
+
+        await degreeModel.syncRegistrationDegreeForUser(parseInt(id, 10));
 
         const degrees = await degreeModel.getDegreesByUserId(parseInt(id, 10));
         const verifiedDegrees = degrees
@@ -372,6 +373,8 @@ const verifyUser = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
+
+        await degreeModel.syncRegistrationDegreeForUser(parseInt(id, 10), adminId);
 
         // Get total verified for email context
         const stats = await userModel.getDashboardStats();

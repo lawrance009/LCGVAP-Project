@@ -52,18 +52,166 @@ const getVerifiedDegreeTypesByUserIds = async (userIds = []) => {
   if (!userIds.length) return {};
 
   const result = await pool.query(
-    `SELECT user_id, array_agg(DISTINCT degree_type ORDER BY degree_type) AS degree_types
+    `SELECT user_id, degree_type
      FROM degrees
      WHERE user_id = ANY($1::int[]) AND is_verified = TRUE
-     GROUP BY user_id`,
+     ORDER BY user_id, degree_type`,
     [userIds]
   );
 
   const map = {};
   for (const row of result.rows) {
-    map[row.user_id] = normalizeDegreeTypesArray(row.degree_types);
+    if (!map[row.user_id]) map[row.user_id] = [];
+    const normalized = String(row.degree_type).toUpperCase();
+    if (!map[row.user_id].includes(normalized)) {
+      map[row.user_id].push(normalized);
+    }
   }
   return map;
+};
+
+const getVerifiedDegreesByUserIds = async (userIds = []) => {
+  if (!userIds.length) return {};
+
+  const result = await pool.query(
+    `SELECT id, user_id, degree_type, graduation_year, field_of_study
+     FROM degrees
+     WHERE user_id = ANY($1::int[]) AND is_verified = TRUE
+     ORDER BY user_id, degree_type`,
+    [userIds]
+  );
+
+  const map = {};
+  for (const row of result.rows) {
+    if (!map[row.user_id]) map[row.user_id] = [];
+    map[row.user_id].push({
+      id: row.id,
+      degree_type: String(row.degree_type).toUpperCase(),
+      graduation_year: row.graduation_year,
+      field_of_study: row.field_of_study,
+    });
+  }
+  return map;
+};
+
+const mapRegistrationDegreeType = (raw) => {
+  if (!raw) return null;
+  const value = String(raw).trim();
+  const upper = value.toUpperCase();
+  if (value === 'Bachelor' || upper === 'BACHELOR') return 'BACHELOR';
+  if (value === 'Master' || upper === 'MASTER') return 'MASTER';
+  if (value === 'PhD' || upper === 'PHD') return 'PHD';
+  if (['POSTDOC', 'ASSOCIATE', 'DIPLOMA'].includes(upper)) return upper;
+  return null;
+};
+
+/**
+ * Copy the legacy registration credential on users.* into degrees.*
+ * when a verified graduate does not yet have that degree row.
+ */
+const syncRegistrationDegreeForUser = async (userId, adminId = null) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const userRes = await client.query(
+      `SELECT id, degree_type, university_id, department_id, graduation_year, degree_file, verified_at
+       FROM users
+       WHERE id = $1 AND role = 'graduate' AND is_verified = TRUE`,
+      [userId]
+    );
+    const user = userRes.rows[0];
+    if (!user) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    const degreeType = mapRegistrationDegreeType(user.degree_type);
+    if (!degreeType) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    const existingRes = await client.query(
+      `SELECT id, is_verified FROM degrees WHERE user_id = $1 AND degree_type = $2 LIMIT 1`,
+      [userId, degreeType]
+    );
+
+    let degree;
+    if (existingRes.rows[0]) {
+      degree = existingRes.rows[0];
+      if (!degree.is_verified) {
+        const updated = await client.query(
+          `UPDATE degrees
+           SET is_verified = TRUE,
+               verified_at = COALESCE(verified_at, $3, CURRENT_TIMESTAMP),
+               verified_by = COALESCE(verified_by, $4),
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $1 AND user_id = $2
+           RETURNING *`,
+          [degree.id, userId, user.verified_at, adminId]
+        );
+        degree = updated.rows[0];
+      }
+    } else {
+      const inserted = await client.query(
+        `INSERT INTO degrees (
+           user_id, degree_type, university_id, department_id,
+           graduation_year, degree_file, is_verified, verified_at, verified_by
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, TRUE, COALESCE($7, CURRENT_TIMESTAMP), $8)
+         RETURNING *`,
+        [
+          userId,
+          degreeType,
+          user.university_id,
+          user.department_id,
+          user.graduation_year,
+          user.degree_file,
+          user.verified_at,
+          adminId,
+        ]
+      );
+      degree = inserted.rows[0];
+    }
+
+    const defaults = DEGREE_BADGE_DEFAULTS[degreeType] || {
+      name: `${degreeType} Graduate`,
+      icon: '🎓',
+    };
+
+    await client.query(
+      `INSERT INTO badges (degree_id, name, icon, description)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (degree_id) DO NOTHING`,
+      [
+        degree.id,
+        defaults.name,
+        defaults.icon,
+        `Verified ${degreeType.toLowerCase()} credential`,
+      ]
+    );
+
+    await client.query('COMMIT');
+    return degree;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const backfillRegistrationDegrees = async () => {
+  const result = await pool.query(
+    `SELECT id FROM users
+     WHERE is_verified = TRUE AND role = 'graduate' AND degree_type IS NOT NULL`
+  );
+
+  for (const row of result.rows) {
+    await syncRegistrationDegreeForUser(row.id);
+  }
 };
 
 // ---------------------------------------------------------------
@@ -316,4 +464,7 @@ module.exports = {
   computeIsPremiumVeteran,
   normalizeDegreeTypesArray,
   getVerifiedDegreeTypesByUserIds,
+  getVerifiedDegreesByUserIds,
+  syncRegistrationDegreeForUser,
+  backfillRegistrationDegrees,
 };

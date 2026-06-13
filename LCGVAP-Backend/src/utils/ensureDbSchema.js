@@ -93,6 +93,15 @@ const ensureDbSchema = async () => {
   }
 
   logger.info('Database schema patches applied');
+
+  try {
+    const degreeModel = require('../models/degreeModel');
+    await degreeModel.backfillRegistrationDegrees();
+    logger.info('Registration degree backfill completed');
+  } catch (error) {
+    logger.error('Registration degree backfill failed', { error: error.message });
+    throw error;
+  }
 };
 
 module.exports = { ensureDbSchema };
