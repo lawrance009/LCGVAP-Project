@@ -97,10 +97,10 @@ const verifyDegreeSchema = z.object({
   badge_name:        z.string().max(255).trim().optional(),
   badge_icon:        z.string().max(10).trim().optional(),
   badge_description: z.string().max(500).trim().optional(),
-});
+}).default({});
 
 const rejectDegreeSchema = z.object({
-  reason: z.string().min(10, 'Rejection reason must be at least 10 characters').max(500).trim(),
+  reason: z.string().min(5, 'Rejection reason must be at least 5 characters').max(500).trim(),
 });
 
 // ── USER REJECTION (Admin) ────────────────────────────────────

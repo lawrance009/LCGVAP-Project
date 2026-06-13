@@ -23,8 +23,15 @@ const { ZodError } = require('zod');
  * @param {import('zod').ZodSchema} schema
  * @returns {import('express').RequestHandler}
  */
+const normalizeBody = (body) => {
+  if (body && typeof body === 'object' && !Array.isArray(body)) {
+    return body;
+  }
+  return {};
+};
+
 const validate = (schema) => (req, res, next) => {
-  const result = schema.safeParse(req.body);
+  const result = schema.safeParse(normalizeBody(req.body));
 
   if (!result.success) {
     // Format Zod errors into a clean, readable structure

@@ -49,7 +49,7 @@ const Dashboard = () => {
 
         if (result.isConfirmed) {
             try {
-                await api.put(`/users/${userId}/verify`);
+                await api.put(`/users/${userId}/verify`, {});
 
                 // Update specific user in list locally (remove them)
                 setPendingUsers(prev => prev.filter(u => u.id !== userId));
@@ -94,6 +94,9 @@ const Dashboard = () => {
             inputValidator: (value) => {
                 if (!value) {
                     return 'You need to write a reason!';
+                }
+                if (value.trim().length < 5) {
+                    return 'Rejection reason must be at least 5 characters.';
                 }
             }
         });

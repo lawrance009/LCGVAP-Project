@@ -180,8 +180,23 @@ const verifyDegree = async (req, res, next) => {
     const adminId  = req.user.id;
     const degreeId = parseInt(req.params.degreeId);
 
+    if (!Number.isInteger(degreeId) || degreeId <= 0) {
+      return res.status(400).json({ error: 'Invalid degree ID' });
+    }
+
     // Optional: admin can supply a custom badge name/icon in body
-    const { badge_name, badge_icon, badge_description } = req.body;
+    const { badge_name, badge_icon, badge_description } = req.body || {};
+
+    const existing = await degreeModel.getDegreeById(degreeId);
+    if (!existing) {
+      return res.status(404).json({ error: 'Degree not found' });
+    }
+    if (existing.is_verified) {
+      return res.status(409).json({ error: 'This degree has already been verified.' });
+    }
+    if (existing.rejection_reason) {
+      return res.status(409).json({ error: 'This degree was rejected and cannot be verified.' });
+    }
 
     const result = await degreeModel.verifyDegree(degreeId, adminId, {
       name:        badge_name,
@@ -190,7 +205,7 @@ const verifyDegree = async (req, res, next) => {
     });
 
     if (!result) {
-      return res.status(404).json({ error: 'Degree not found' });
+      return res.status(409).json({ error: 'Degree is no longer pending verification.' });
     }
 
     res.json({
@@ -213,8 +228,8 @@ const rejectDegree = async (req, res, next) => {
     const degreeId = parseInt(req.params.degreeId);
     const { reason } = req.body;
 
-    if (!reason) {
-      return res.status(400).json({ error: 'Rejection reason is required' });
+    if (!Number.isInteger(degreeId) || degreeId <= 0) {
+      return res.status(400).json({ error: 'Invalid degree ID' });
     }
 
     const degree = await degreeModel.rejectDegree(degreeId, adminId, reason);

@@ -133,12 +133,14 @@ const verifyDegree = async (degreeId, adminId, badgeOverride = {}) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Mark degree as verified
+    // 1. Mark degree as verified (only pending submissions)
     const degreeResult = await client.query(
       `UPDATE degrees
        SET is_verified = TRUE, verified_at = CURRENT_TIMESTAMP, verified_by = $2,
            rejection_reason = NULL, updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
+         AND is_verified = FALSE
+         AND rejection_reason IS NULL
        RETURNING *;`,
       [degreeId, adminId]
     );

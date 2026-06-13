@@ -39,7 +39,7 @@ const AdminDegrees = () => {
         if (!result.isConfirmed) return;
 
         try {
-            await api.put(`/degrees/${degree.id}/verify`);
+            await api.put(`/degrees/${degree.id}/verify`, {});
             setDegrees(prev => prev.filter(d => d.id !== degree.id));
             Swal.fire({
                 icon: 'success',
@@ -47,7 +47,8 @@ const AdminDegrees = () => {
                 text: `${degree.first_name}'s ${degree.degree_type} degree has been verified and a badge has been awarded.`,
             });
         } catch (err) {
-            Swal.fire('Error', err.response?.data?.error || 'Failed to verify degree.', 'error');
+            const detail = err.response?.data?.errors?.[0]?.message;
+            Swal.fire('Error', detail || err.response?.data?.error || 'Failed to verify degree.', 'error');
         }
     };
 
@@ -65,6 +66,7 @@ const AdminDegrees = () => {
             confirmButtonText: 'Reject Degree',
             inputValidator: (value) => {
                 if (!value) return 'You must provide a rejection reason!';
+                if (value.trim().length < 5) return 'Rejection reason must be at least 5 characters.';
             },
         });
 
@@ -79,7 +81,8 @@ const AdminDegrees = () => {
                 text: `${degree.first_name}'s ${degree.degree_type} degree has been rejected.`,
             });
         } catch (err) {
-            Swal.fire('Error', err.response?.data?.error || 'Failed to reject degree.', 'error');
+            const detail = err.response?.data?.errors?.[0]?.message;
+            Swal.fire('Error', detail || err.response?.data?.error || 'Failed to reject degree.', 'error');
         }
     };
 
