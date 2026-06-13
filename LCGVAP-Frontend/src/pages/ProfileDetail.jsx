@@ -5,7 +5,7 @@ import getFileUrl from '../utils/getFileUrl';
 import PremiumTag from '../components/profile/PremiumTag';
 import DegreeCard from '../components/profile/DegreeCard';
 import BadgeList from '../components/profile/BadgeList';
-import { formatDegreeType, getPublicDegreeTypes } from '../utils/degreeDisplay';
+import { formatDegreeType, getPublicDegreeTypes, isPublicPremiumVeteran } from '../utils/degreeDisplay';
 
 const ProfileDetail = () => {
     const { id } = useParams();
@@ -63,7 +63,7 @@ const ProfileDetail = () => {
                                 {profile.first_name} {profile.last_name}
                                 <span className="ml-2 text-blue-500 text-2xl" title="Verified">✓</span>
                             </h1>
-                            <PremiumTag isPremiumVeteran={profile.is_premium_veteran} />
+                            <PremiumTag isPremiumVeteran={isPublicPremiumVeteran(profile)} />
                         </div>
 
                         {degreeTypes.length > 0 && (

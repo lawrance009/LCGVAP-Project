@@ -33,6 +33,39 @@ const computeIsPremiumVeteran = (degreeTypes = []) => {
   return types.has('BACHELOR') && types.has('MASTER');
 };
 
+const normalizeDegreeTypesArray = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((t) => String(t).toUpperCase()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.replace(/^\{|\}$/g, '').trim();
+    if (!trimmed) return [];
+    return trimmed
+      .split(',')
+      .map((part) => part.replace(/^"|"$/g, '').trim().toUpperCase())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const getVerifiedDegreeTypesByUserIds = async (userIds = []) => {
+  if (!userIds.length) return {};
+
+  const result = await pool.query(
+    `SELECT user_id, array_agg(DISTINCT degree_type ORDER BY degree_type) AS degree_types
+     FROM degrees
+     WHERE user_id = ANY($1::int[]) AND is_verified = TRUE
+     GROUP BY user_id`,
+    [userIds]
+  );
+
+  const map = {};
+  for (const row of result.rows) {
+    map[row.user_id] = normalizeDegreeTypesArray(row.degree_types);
+  }
+  return map;
+};
+
 // ---------------------------------------------------------------
 // CREATE DEGREE
 // Called when a user submits a new credential for review.
@@ -281,4 +314,6 @@ module.exports = {
   deleteDegree,
   DEGREE_BADGE_DEFAULTS,
   computeIsPremiumVeteran,
+  normalizeDegreeTypesArray,
+  getVerifiedDegreeTypesByUserIds,
 };

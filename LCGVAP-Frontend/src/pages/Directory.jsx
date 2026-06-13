@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import getFileUrl from '../utils/getFileUrl';
 import PremiumTag from '../components/profile/PremiumTag';
-import { formatDegreeType, getPublicDegreeTypes } from '../utils/degreeDisplay';
+import { formatDegreeType, getPublicDegreeTypes, isPublicPremiumVeteran } from '../utils/degreeDisplay';
 
 const Directory = () => {
     const [graduates, setGraduates] = useState([]);
@@ -131,8 +131,14 @@ const Directory = () => {
                                 {graduates.map(grad => (
                                     <div
                                         key={grad.id}
-                                        className="bg-white border-2 border-gray-100 hover:bg-gray-50 transition p-5 sm:p-6 lg:p-8 flex flex-col items-center text-center group h-full"
+                                        className="relative bg-white border-2 border-gray-100 hover:bg-gray-50 transition p-5 sm:p-6 lg:p-8 flex flex-col items-center text-center group h-full"
                                     >
+                                        {isPublicPremiumVeteran(grad) && (
+                                            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
+                                                <PremiumTag isPremiumVeteran />
+                                            </div>
+                                        )}
+
                                         <div className="h-20 w-20 sm:h-28 sm:w-28 lg:h-32 lg:w-32 bg-indigo-600 mb-4 sm:mb-6 overflow-hidden shrink-0">
                                             {grad.profile_photo ? (
                                                 <img
@@ -152,7 +158,6 @@ const Directory = () => {
                                         <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-1 flex flex-wrap items-center justify-center gap-2">
                                             <span className="break-words">{grad.first_name} {grad.last_name}</span>
                                             <span className="text-indigo-600 text-base shrink-0" title="Verified">✓</span>
-                                            {grad.is_premium_veteran && <PremiumTag isPremiumVeteran />}
                                         </h3>
                                         <p className="text-indigo-600 font-bold text-sm mb-1 px-1 break-words">{grad.university_name}</p>
                                         <p className="text-gray-600 text-sm mb-3 sm:mb-4 px-1 break-words">{grad.department_name}</p>

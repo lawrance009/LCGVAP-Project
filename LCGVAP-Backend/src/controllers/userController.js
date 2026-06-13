@@ -117,10 +117,26 @@ const getGraduates = async (req, res, next) => {
             userModel.countAllVerifiedUsers(filters),
         ]);
 
+        const typesByUser = await degreeModel.getVerifiedDegreeTypesByUserIds(
+            graduates.map((grad) => grad.id)
+        );
+
+        const enrichedGraduates = graduates.map((grad) => {
+            const verifiedDegreeTypes =
+                typesByUser[grad.id] ||
+                degreeModel.normalizeDegreeTypesArray(grad.verified_degree_types);
+
+            return {
+                ...grad,
+                verified_degree_types: verifiedDegreeTypes,
+                is_premium_veteran: degreeModel.computeIsPremiumVeteran(verifiedDegreeTypes),
+            };
+        });
+
         const totalPages = Math.max(1, Math.ceil(total / limit));
 
         res.json({
-            data: graduates,
+            data: enrichedGraduates,
             meta: { page, limit, total, totalPages },
         });
     } catch (error) {
