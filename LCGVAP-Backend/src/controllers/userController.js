@@ -168,7 +168,19 @@ const getPublicUserProfile = async (req, res, next) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json(user);
+        const degrees = await degreeModel.getDegreesByUserId(parseInt(id, 10));
+        const verifiedDegrees = degrees
+            .filter((d) => d.is_verified)
+            .map(({ degree_file, rejection_reason, ...safeDegree }) => safeDegree);
+
+        res.json({
+            ...user,
+            verified_degrees: verifiedDegrees,
+            verified_degree_types: verifiedDegrees.map((d) => d.degree_type),
+            is_premium_veteran: degreeModel.computeIsPremiumVeteran(
+                verifiedDegrees.map((d) => d.degree_type)
+            ),
+        });
     } catch (error) {
         next(error);
     }

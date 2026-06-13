@@ -38,8 +38,7 @@ const getMyDegrees = async (req, res, next) => {
       .filter(d => d.is_verified)
       .map(d => d.degree_type);
 
-    const isPremiumVeteran =
-      verifiedTypes.includes('BACHELOR') && verifiedTypes.includes('MASTER');
+    const isPremiumVeteran = degreeModel.computeIsPremiumVeteran(verifiedTypes);
 
     res.json({
       degrees,
@@ -264,7 +263,7 @@ const getPublicUserDegrees = async (req, res, next) => {
     const publicDegrees = degrees.filter(d => d.is_verified);
 
     const verifiedTypes    = publicDegrees.map(d => d.degree_type);
-    const isPremiumVeteran = verifiedTypes.includes('BACHELOR') && verifiedTypes.includes('MASTER');
+    const isPremiumVeteran = degreeModel.computeIsPremiumVeteran(verifiedTypes);
 
     res.json({ degrees: publicDegrees, is_premium_veteran: isPremiumVeteran });
   } catch (error) {

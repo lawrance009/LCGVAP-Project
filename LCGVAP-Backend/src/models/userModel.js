@@ -169,7 +169,25 @@ const findAllVerifiedUsers = async (filters = {}) => {
       u.id, u.first_name, u.last_name, u.degree_type, u.profile_photo, u.bio,
       uni.name as university_name, 
       dept.name as department_name,
-      u.created_at
+      u.created_at,
+      COALESCE(
+        (
+          SELECT array_agg(DISTINCT d.degree_type ORDER BY d.degree_type)
+          FROM degrees d
+          WHERE d.user_id = u.id AND d.is_verified = TRUE
+        ),
+        ARRAY[]::varchar[]
+      ) AS verified_degree_types,
+      (
+        EXISTS (
+          SELECT 1 FROM degrees d
+          WHERE d.user_id = u.id AND d.is_verified = TRUE AND d.degree_type = 'BACHELOR'
+        )
+        AND EXISTS (
+          SELECT 1 FROM degrees d
+          WHERE d.user_id = u.id AND d.is_verified = TRUE AND d.degree_type = 'MASTER'
+        )
+      ) AS is_premium_veteran
     FROM users u
     LEFT JOIN universities uni ON u.university_id = uni.id
     LEFT JOIN departments dept ON u.department_id = dept.id
@@ -285,8 +303,26 @@ const findPublicUserById = async (id) => {
       u.id, u.first_name, u.last_name, u.degree_type, u.profile_photo, u.bio,
       uni.name as university_name, 
       dept.name as department_name,
-            u.created_at,
-      u.graduation_year
+      u.created_at,
+      u.graduation_year,
+      COALESCE(
+        (
+          SELECT array_agg(DISTINCT d.degree_type ORDER BY d.degree_type)
+          FROM degrees d
+          WHERE d.user_id = u.id AND d.is_verified = TRUE
+        ),
+        ARRAY[]::varchar[]
+      ) AS verified_degree_types,
+      (
+        EXISTS (
+          SELECT 1 FROM degrees d
+          WHERE d.user_id = u.id AND d.is_verified = TRUE AND d.degree_type = 'BACHELOR'
+        )
+        AND EXISTS (
+          SELECT 1 FROM degrees d
+          WHERE d.user_id = u.id AND d.is_verified = TRUE AND d.degree_type = 'MASTER'
+        )
+      ) AS is_premium_veteran
     FROM users u
     LEFT JOIN universities uni ON u.university_id = uni.id
     LEFT JOIN departments dept ON u.department_id = dept.id

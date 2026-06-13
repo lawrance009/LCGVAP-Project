@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
+import getFileUrl from '../utils/getFileUrl';
+import PremiumTag from '../components/profile/PremiumTag';
+import DegreeCard from '../components/profile/DegreeCard';
+import BadgeList from '../components/profile/BadgeList';
+import { formatDegreeType, getPublicDegreeTypes } from '../utils/degreeDisplay';
 
 const ProfileDetail = () => {
     const { id } = useParams();
@@ -25,6 +30,12 @@ const ProfileDetail = () => {
     if (loading) return <div className="text-center py-20">Loading...</div>;
     if (!profile) return <div className="text-center py-20 text-red-500">Profile not found</div>;
 
+    const verifiedDegrees = profile.verified_degrees || [];
+    const degreeTypes = getPublicDegreeTypes(profile);
+    const badges = verifiedDegrees
+        .filter((d) => d.badge)
+        .map((d) => d.badge);
+
     return (
         <div className="container mx-auto px-4 py-12">
             <Link to="/directory" className="text-indigo-600 hover:underline mb-8 inline-block">&larr; Back to Directory</Link>
@@ -35,7 +46,11 @@ const ProfileDetail = () => {
                     <div className="relative -mt-16 mb-6 flex justify-center md:justify-start">
                         <div className="h-32 w-32 rounded-full border-4 border-white bg-gray-200 overflow-hidden">
                             {profile.profile_photo ? (
-                                <img src={profile.profile_photo} alt={profile.last_name} className="h-full w-full object-cover" />
+                                <img
+                                    src={getFileUrl(profile.profile_photo)}
+                                    alt={profile.last_name}
+                                    className="h-full w-full object-cover"
+                                />
                             ) : (
                                 <span className="text-6xl text-gray-400 flex items-center justify-center h-full">👤</span>
                             )}
@@ -43,11 +58,26 @@ const ProfileDetail = () => {
                     </div>
 
                     <div className="text-center md:text-left">
-                        <h1 className="text-3xl font-bold text-gray-800">
-                            {profile.first_name} {profile.last_name}
-                            <span className="ml-2 text-blue-500 text-2xl" title="Verified">✓</span>
-                        </h1>
-                        <p className="text-xl text-indigo-600 font-medium mt-1 mb-6">{profile.degree_type}</p>
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                            <h1 className="text-3xl font-bold text-gray-800">
+                                {profile.first_name} {profile.last_name}
+                                <span className="ml-2 text-blue-500 text-2xl" title="Verified">✓</span>
+                            </h1>
+                            <PremiumTag isPremiumVeteran={profile.is_premium_veteran} />
+                        </div>
+
+                        {degreeTypes.length > 0 && (
+                            <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-6">
+                                {degreeTypes.map((type) => (
+                                    <span
+                                        key={type}
+                                        className="inline-block px-3 py-1 bg-indigo-50 text-indigo-800 text-sm font-semibold rounded-full border border-indigo-100"
+                                    >
+                                        {formatDegreeType(type)}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
                         {profile.bio && (
                             <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-100">
@@ -72,6 +102,23 @@ const ProfileDetail = () => {
                                 </p>
                             </div>
                         </div>
+
+                        {verifiedDegrees.length > 0 && (
+                            <div className="mt-10 space-y-6">
+                                <h2 className="text-lg font-bold text-gray-800">Verified Credentials</h2>
+                                <div className="space-y-4">
+                                    {verifiedDegrees.map((degree) => (
+                                        <DegreeCard key={degree.id} degree={{ ...degree, degree_file: null }} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {badges.length > 0 && (
+                            <div className="mt-8">
+                                <BadgeList badges={badges} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -26,6 +26,13 @@ const DEGREE_BADGE_DEFAULTS = {
   DIPLOMA:  { name: "Diploma Holder",       icon: "📋" },
 };
 
+const computeIsPremiumVeteran = (degreeTypes = []) => {
+  const types = new Set(
+    (Array.isArray(degreeTypes) ? degreeTypes : []).map((t) => String(t).toUpperCase())
+  );
+  return types.has('BACHELOR') && types.has('MASTER');
+};
+
 // ---------------------------------------------------------------
 // CREATE DEGREE
 // Called when a user submits a new credential for review.
@@ -273,4 +280,5 @@ module.exports = {
   updateDegree,
   deleteDegree,
   DEGREE_BADGE_DEFAULTS,
+  computeIsPremiumVeteran,
 };

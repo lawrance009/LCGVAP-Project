@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import getFileUrl from '../utils/getFileUrl';
+import PremiumTag from '../components/profile/PremiumTag';
+import { formatDegreeType, getPublicDegreeTypes } from '../utils/degreeDisplay';
 
 const Directory = () => {
     const [graduates, setGraduates] = useState([]);
@@ -150,12 +152,20 @@ const Directory = () => {
                                         <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-1 flex flex-wrap items-center justify-center gap-2">
                                             <span className="break-words">{grad.first_name} {grad.last_name}</span>
                                             <span className="text-indigo-600 text-base shrink-0" title="Verified">✓</span>
+                                            {grad.is_premium_veteran && <PremiumTag isPremiumVeteran />}
                                         </h3>
                                         <p className="text-indigo-600 font-bold text-sm mb-1 px-1 break-words">{grad.university_name}</p>
                                         <p className="text-gray-600 text-sm mb-3 sm:mb-4 px-1 break-words">{grad.department_name}</p>
-                                        <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-gray-900 text-xs font-bold uppercase tracking-wider mb-4 sm:mb-6">
-                                            {grad.degree_type}
-                                        </span>
+                                        <div className="flex flex-wrap justify-center gap-2 mb-4 sm:mb-6">
+                                            {getPublicDegreeTypes(grad).map((type) => (
+                                                <span
+                                                    key={type}
+                                                    className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-gray-900 text-xs font-bold uppercase tracking-wider"
+                                                >
+                                                    {formatDegreeType(type)}
+                                                </span>
+                                            ))}
+                                        </div>
 
                                         <Link
                                             to={`/directory/${grad.id}`}
