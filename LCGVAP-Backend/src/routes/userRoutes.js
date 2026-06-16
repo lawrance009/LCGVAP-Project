@@ -54,14 +54,20 @@ router.get('/:userId/degrees', degreeController.getPublicUserDegrees);
 router.get('/uploads/protected/:filename', userController.getProtectedUpload);
 
 // -------------------------------------------------------
-// AUTHENTICATED ROUTES (all routes below require login)
+// AUTHENTICATED ROUTES
+// NOTE: `authenticate` is applied per-route below (not via a
+// blanket router.use()) so that the public '/:id' profile route
+// declared at the bottom of this file is NOT accidentally gated
+// behind a login requirement. It previously was, which made
+// anonymous visitors get a 401 on any directory profile and the
+// frontend displayed that as "Profile not found".
 // -------------------------------------------------------
-router.use(authenticate);
 
 // --- My Profile ---
-router.get('/me', userController.getProfile);
-router.get('/files/sign', userController.signPrivateFileUrl);
+router.get('/me', authenticate, userController.getProfile);
+router.get('/files/sign', authenticate, userController.signPrivateFileUrl);
 router.put('/me',
+    authenticate,
     upload.fields([
         { name: 'profile_photo', maxCount: 1 },
         { name: 'degree_file',   maxCount: 1 }
@@ -73,12 +79,12 @@ router.put('/me',
 // -------------------------------------------------------
 // ADMIN ROUTES
 // -------------------------------------------------------
-router.get('/stats',     isAdmin, userController.getDashboardStats);
-router.get('/pending',   isAdmin, userController.getPendingUsers);
-router.get('/graduates', isAdmin, userController.getAllGraduatesAdmin);
-router.put('/:id/verify', isAdmin, userController.verifyUser);
-router.put('/:id/reject', isAdmin, validate(rejectUserSchema), userController.rejectUser);
-router.delete('/:id/graduate', isAdmin, userController.deleteGraduate);
+router.get('/stats',     authenticate, isAdmin, userController.getDashboardStats);
+router.get('/pending',   authenticate, isAdmin, userController.getPendingUsers);
+router.get('/graduates', authenticate, isAdmin, userController.getAllGraduatesAdmin);
+router.put('/:id/verify', authenticate, isAdmin, userController.verifyUser);
+router.put('/:id/reject', authenticate, isAdmin, validate(rejectUserSchema), userController.rejectUser);
+router.delete('/:id/graduate', authenticate, isAdmin, userController.deleteGraduate);
 
 // -------------------------------------------------------
 // MASTER ADMIN ROUTES (Boss Admin only)
@@ -87,7 +93,9 @@ router.get('/admins',        authenticate, isMasterAdmin, userController.getAdmi
 router.delete('/admins/:id', authenticate, isMasterAdmin, userController.deleteAdmin);
 
 // -------------------------------------------------------
-// PUBLIC — User profile by ID (must remain last)
+// PUBLIC — User profile by ID (must remain last so the literal
+// paths above, e.g. '/stats', '/admins', take precedence over
+// this catch-all ':id' pattern)
 // -------------------------------------------------------
 router.get('/:id', userController.getPublicUserProfile);
 

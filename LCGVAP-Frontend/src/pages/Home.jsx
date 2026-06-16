@@ -6,6 +6,7 @@ import getFileUrl from '../utils/getFileUrl';
 import api from '../services/api';
 import FeaturedUniversitiesSection from '../components/FeaturedUniversitiesSection';
 import { BRAND } from '../constants/branding';
+import { Mail, Clock, Shield, CheckCircle2, ShieldCheck, Lock, Users } from 'lucide-react';
 
 // Fallback FAQs shown only when the admin has not published any yet.
 const DEFAULT_FAQS = [
@@ -29,6 +30,27 @@ const DEFAULT_FAQS = [
         question: "Can an application be resubmitted if rejected?",
         answer: "Yes. Applicants may resubmit documentation if prior submissions were incomplete or insufficient. Updated documentation must meet verification requirements."
     }
+];
+
+// Fallback hero slides — shown only until the admin publishes slides via
+// the Slides CMS (/patron/slides). Three distinct angles: the achievement
+// itself, the community it belongs to, and the security behind it.
+const FALLBACK_SLIDES = [
+    {
+        title: 'Earned. Verified. Recognized.',
+        subtitle: "Every degree on this platform is independently confirmed — your achievement, permanently on record.",
+        image_url: 'https://images.unsplash.com/photo-1690541261286-9f1cf46327fb?auto=format&fit=crop&w=1920&q=80',
+    },
+    {
+        title: 'One Network, Every Veteran.',
+        subtitle: 'Liberian graduates of Cyprus, united in one verified alumni community.',
+        image_url: 'https://images.unsplash.com/photo-1758272133693-d2124dbe00de?auto=format&fit=crop&w=1920&q=80',
+    },
+    {
+        title: 'Your Credentials, Secured.',
+        subtitle: 'Identity-anchored verification protects your record from fraud and misrepresentation.',
+        image_url: 'https://images.unsplash.com/photo-1725656469709-4d0bcb828bcf?auto=format&fit=crop&w=1920&q=80',
+    },
 ];
 
 const Home = () => {
@@ -63,13 +85,16 @@ const Home = () => {
         fetchAllData();
     }, []);
 
-    // Auto-advance slides
+    // Auto-advance hero slides — swaps every 7s (the middle of the 5-10s
+    // window). Falls back to cycling the 3 FALLBACK_SLIDES when the admin
+    // hasn't published any slides yet, so the hero never goes static.
     useEffect(() => {
-        if (slides.length <= 1) return;
+        const count = slides.length > 0 ? slides.length : FALLBACK_SLIDES.length;
+        if (count <= 1) return;
 
         const interval = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % slides.length);
-        }, 5000);
+            setCurrentSlide((prev) => (prev + 1) % count);
+        }, 7000);
 
         return () => clearInterval(interval);
     }, [slides.length]);
@@ -85,13 +110,12 @@ const Home = () => {
         return () => clearInterval(interval);
     }, [graduates.length]);
 
-    // Fallback static slide if no slides exist
-    const heroContent = slides.length > 0 ? slides[currentSlide] : {
-        title: "Verified Graduates",
-        subtitle: "Veterans & Alumni",
-        description: `${BRAND.portalName} — ${BRAND.fullName}. Ensuring institutional integrity and preserving academic identity through secure verification.`,
-        image_url: null
-    };
+    // Active slide set: admin-managed CMS slides (via /patron/slides) take
+    // priority; fall back to the 3 curated slides above when none are
+    // published yet, so the hero is never empty.
+    const activeSlides = slides.length > 0 ? slides : FALLBACK_SLIDES;
+    const slideCount = activeSlides.length;
+    const heroContent = activeSlides[currentSlide % slideCount] || activeSlides[0];
 
     // Handle Verification Office contact submission
     const handleContactSubmit = async (e) => {
@@ -144,100 +168,90 @@ const Home = () => {
             backgroundSize: '40px 40px'
         }}>
 
-            {/* ================= HERO SECTION ================= */}
-            <section className="relative bg-white">
-                <div className="container mx-auto px-6 py-16 sm:py-24 lg:py-32 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-
-                    {/* LEFT CONTENT */}
+            {/* ================= HERO SECTION — 3-panel swipe slider ================= */}
+            <section className="relative h-[620px] sm:h-[700px] lg:h-[800px] overflow-hidden bg-gray-900">
+                <AnimatePresence mode="wait">
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        {/* Badge */}
-                        <motion.div 
-                            className="inline-flex items-center gap-2 mb-8"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                        >
-                            <div className="h-px w-8 bg-indigo-600"></div>
-                            <span className="text-xs font-bold tracking-[0.2em] text-indigo-600 uppercase">
-                                Government-Grade Verification
-                            </span>
-                        </motion.div>
-
-                        {/* Heading */}
-                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-gray-900 leading-[1.1] mb-4">
-                            Verified<br/>
-                            Graduates.
-                        </h1>
-                        <p className="text-sm sm:text-base font-semibold text-indigo-700 mb-8 leading-snug">
-                            {BRAND.shortName} · {BRAND.portalSubtitle}
-                        </p>
-
-                        <div className="h-1 w-24 bg-indigo-600 mb-8"></div>
-
-                        {/* Description */}
-                        <p className="text-xl text-gray-600 leading-relaxed mb-12 max-w-lg">
-                            Secure verification system protecting academic identity and institutional integrity for all alumni.
-                        </p>
-
-                        {/* CTA Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <Link
-                                to="/register"
-                                className="px-10 py-5 bg-indigo-600 !text-white font-bold text-sm tracking-wide uppercase hover:bg-indigo-700 transition-all duration-200"
-                            >
-                                Get Verified
-                            </Link>
-
-                            <Link
-                                to="/directory"
-                                className="px-10 py-5 border-2 border-gray-900 text-gray-900 font-bold text-sm tracking-wide uppercase hover:bg-gray-900 hover:text-white transition-all duration-200"
-                            >
-                                Explore Directory
-                            </Link>
-                        </div>
-                    </motion.div>
-
-                    {/* RIGHT IMAGE */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 50 }}
+                        key={currentSlide}
+                        initial={{ opacity: 0, x: 100 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                        className="relative"
+                        exit={{ opacity: 0, x: -100 }}
+                        transition={{ duration: 0.7, ease: 'easeInOut' }}
+                        className="absolute inset-0"
                     >
-                        <div className="relative aspect-[4/3] overflow-hidden">
-                            {/* If No Slides From Admin */}
-                            {slides.length === 0 && (
-                                <img
-                                    src="/hero-image.jpg"
-                                    alt={`${BRAND.shortName} Graduates`}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src =
-                                            "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80";
-                                    }}
-                                />
-                            )}
+                        {/* Background image */}
+                        <img
+                            src={getFileUrl(heroContent.image_url) || FALLBACK_SLIDES[0].image_url}
+                            alt={heroContent.title || `${BRAND.shortName} Verification`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = FALLBACK_SLIDES[0].image_url;
+                            }}
+                        />
 
-                            {/* If Slides Exist */}
-                            {slides.length > 0 && slides[currentSlide]?.image_url && (
-                                <img
-                                    src={getFileUrl(slides[currentSlide].image_url)}
-                                    alt={slides[currentSlide].title || `${BRAND.shortName} Slide`}
-                                    className="w-full h-full object-cover transition-opacity duration-700"
-                                />
-                            )}
+                        {/* Dark overlay so text stays readable over any photo */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/20"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/25 to-transparent"></div>
+
+                        {/* Slide content */}
+                        <div className="relative h-full flex items-center">
+                            <div className="container mx-auto px-6 lg:px-12">
+                                <div className="max-w-2xl">
+                                    <div className="inline-flex items-center gap-2 mb-6">
+                                        <div className="h-px w-8 bg-cyan-400"></div>
+                                        <span className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase">
+                                            {BRAND.shortName} · {BRAND.portalSubtitle}
+                                        </span>
+                                    </div>
+
+                                    <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white leading-[1.1] mb-6">
+                                        {heroContent.title}
+                                    </h1>
+
+                                    {heroContent.subtitle && (
+                                        <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 leading-relaxed mb-10 max-w-xl">
+                                            {heroContent.subtitle}
+                                        </p>
+                                    )}
+
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                        <Link
+                                            to="/register"
+                                            className="px-10 py-5 bg-indigo-600 !text-white font-bold text-sm tracking-wide uppercase hover:bg-indigo-700 transition-all duration-200"
+                                        >
+                                            Get Verified
+                                        </Link>
+
+                                        <Link
+                                            to="/directory"
+                                            className="px-10 py-5 border-2 border-white text-white font-bold text-sm tracking-wide uppercase hover:bg-white hover:text-gray-900 transition-all duration-200"
+                                        >
+                                            Explore Directory
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-
-                        {/* Accent Element */}
-                        <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-cyan-400 -z-10"></div>
                     </motion.div>
+                </AnimatePresence>
 
-                </div>
+                {/* Slide indicators */}
+                {slideCount > 1 && (
+                    <div className="absolute bottom-8 left-0 w-full flex justify-center gap-3 z-10">
+                        {Array.from({ length: slideCount }).map((_, idx) => (
+                            <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setCurrentSlide(idx)}
+                                aria-label={`Show slide ${idx + 1}`}
+                                className={`h-2 rounded-full transition-all duration-300 ${
+                                    idx === currentSlide ? 'bg-white w-12' : 'bg-white/40 w-2 hover:bg-white/70'
+                                }`}
+                            />
+                        ))}
+                    </div>
+                )}
             </section>
             {/* --- Stats Section --- */}
             <section className="py-20 bg-gray-50">
@@ -316,19 +330,19 @@ const Home = () => {
                             transition={{ duration: 0.5, delay: 0.2 }}
                         >
                             <FeatureCard
-                                icon="🛡️"
+                                icon={ShieldCheck}
                                 title="Institutional Integrity"
                                 desc="Directly connected to university databases ensuring authenticated records and verified credentials."
                             />
 
                             <FeatureCard
-                                icon="🔒"
+                                icon={Lock}
                                 title="Secure Identity"
                                 desc="Passport and DOB anchored identity prevents fraud and impersonation."
                             />
 
                             <FeatureCard
-                                icon="🚀"
+                                icon={Users}
                                 title="Alumni Network"
                                 desc="Connect with fellow graduates and access exclusive veteran opportunities."
                             />
@@ -585,78 +599,140 @@ const Home = () => {
                         </p>
                     </motion.div>
 
-                    <div className="grid lg:grid-cols-2 gap-6 sm:gap-12 lg:gap-16">
+                    <div className="grid lg:grid-cols-5 gap-0 shadow-sm">
 
-                        {/* Office Information */}
-                        <div className="bg-gray-50 p-4 sm:p-10 lg:p-12 rounded-xl sm:rounded-none">
-                            <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-6 sm:mb-10 uppercase tracking-wider">
+                        {/* Office Information — dark official panel */}
+                        <motion.div
+                            className="lg:col-span-2 bg-gray-900 text-white p-6 sm:p-10 lg:p-12 rounded-t-xl sm:rounded-none relative overflow-hidden"
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-cyan-400"></div>
+
+                            <h3 className="text-lg sm:text-2xl font-black mb-8 sm:mb-12 uppercase tracking-wider">
                                 Office Information
                             </h3>
 
-                            <div className="space-y-5 sm:space-y-8 text-gray-600">
-                                <div>
-                                    <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">Official Email</p>
-                                    <p className="text-base sm:text-lg break-all">{BRAND.contactEmail}</p>
+                            <div className="space-y-6 sm:space-y-8">
+                                <div className="flex gap-4 border-b border-gray-800 pb-6">
+                                    <Mail className="w-5 h-5 text-cyan-400 shrink-0" aria-hidden="true" />
+                                    <div>
+                                        <p className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">Official Email</p>
+                                        <p className="text-sm sm:text-base text-gray-300 break-all">{BRAND.contactEmail}</p>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">Processing Window</p>
-                                    <p className="text-base sm:text-lg">2–5 Business Days</p>
+                                <div className="flex gap-4 border-b border-gray-800 pb-6">
+                                    <Clock className="w-5 h-5 text-cyan-400 shrink-0" aria-hidden="true" />
+                                    <div>
+                                        <p className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">Processing Window</p>
+                                        <p className="text-sm sm:text-base text-gray-300">2–5 Business Days</p>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">Scope of Assistance</p>
-                                    <p className="text-base sm:text-lg">Alumni verification, document review clarification, and institutional recognition matters only.</p>
+                                <div className="flex gap-4">
+                                    <Shield className="w-5 h-5 text-cyan-400 shrink-0" aria-hidden="true" />
+                                    <div>
+                                        <p className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">Scope of Assistance</p>
+                                        <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                                            Alumni verification, document review clarification, and institutional recognition matters only.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+
+                            <div className="mt-10 sm:mt-12 pt-6 border-t border-gray-800 flex items-center gap-2 text-xs text-gray-400">
+                                <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" aria-hidden="true" />
+                                Replies are sent only to the email address you submit below.
+                            </div>
+                        </motion.div>
 
                         {/* Contact Form */}
-                        <form className="space-y-4 sm:space-y-6" onSubmit={handleContactSubmit}>
-                            <input
-                                type="text"
-                                placeholder="Full Legal Name"
-                                className="w-full px-4 sm:px-6 py-3 sm:py-4 text-base border-2 border-gray-200 focus:outline-none focus:border-indigo-600 transition-colors"
-                                value={contactForm.name}
-                                onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                                required
-                            />
+                        <motion.form
+                            className="lg:col-span-3 bg-white border border-t-0 lg:border-t lg:border-l-0 border-gray-200 p-6 sm:p-10 lg:p-12 rounded-b-xl sm:rounded-none space-y-5"
+                            onSubmit={handleContactSubmit}
+                            initial={{ opacity: 0, x: 20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: 0.1 }}
+                        >
+                            <div className="grid sm:grid-cols-2 gap-5">
+                                <div>
+                                    <label htmlFor="contact-name" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                        Full Legal Name
+                                    </label>
+                                    <input
+                                        id="contact-name"
+                                        type="text"
+                                        placeholder="As it appears on your degree"
+                                        className="w-full px-4 sm:px-5 py-3 sm:py-4 text-base border-2 border-gray-200 focus:outline-none focus:border-indigo-600 transition-colors"
+                                        value={contactForm.name}
+                                        onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
 
-                            <input
-                                type="email"
-                                placeholder="Email Address"
-                                className="w-full px-4 sm:px-6 py-3 sm:py-4 text-base border-2 border-gray-200 focus:outline-none focus:border-indigo-600 transition-colors"
-                                value={contactForm.email}
-                                onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                                required
-                            />
+                                <div>
+                                    <label htmlFor="contact-email" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        id="contact-email"
+                                        type="email"
+                                        placeholder="you@example.com"
+                                        className="w-full px-4 sm:px-5 py-3 sm:py-4 text-base border-2 border-gray-200 focus:outline-none focus:border-indigo-600 transition-colors"
+                                        value={contactForm.email}
+                                        onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
 
-                            <input
-                                type="text"
-                                placeholder="Subject of Inquiry"
-                                className="w-full px-4 sm:px-6 py-3 sm:py-4 text-base border-2 border-gray-200 focus:outline-none focus:border-indigo-600 transition-colors"
-                                value={contactForm.subject}
-                                onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
-                                required
-                            />
+                            <div>
+                                <label htmlFor="contact-subject" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                    Subject of Inquiry
+                                </label>
+                                <input
+                                    id="contact-subject"
+                                    type="text"
+                                    placeholder="e.g. Verification status, document resubmission"
+                                    className="w-full px-4 sm:px-5 py-3 sm:py-4 text-base border-2 border-gray-200 focus:outline-none focus:border-indigo-600 transition-colors"
+                                    value={contactForm.subject}
+                                    onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                                    required
+                                />
+                            </div>
 
-                            <textarea
-                                rows="6"
-                                placeholder="Provide detailed information regarding your inquiry."
-                                className="w-full px-4 sm:px-6 py-3 sm:py-4 text-base border-2 border-gray-200 focus:outline-none focus:border-indigo-600 transition-colors resize-y min-h-[160px] sm:min-h-[200px]"
-                                value={contactForm.message}
-                                onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                                required
-                            />
+                            <div>
+                                <label htmlFor="contact-message" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                    Message
+                                </label>
+                                <textarea
+                                    id="contact-message"
+                                    rows="6"
+                                    placeholder="Provide detailed information regarding your inquiry."
+                                    className="w-full px-4 sm:px-5 py-3 sm:py-4 text-base border-2 border-gray-200 focus:outline-none focus:border-indigo-600 transition-colors resize-y min-h-[140px] sm:min-h-[180px]"
+                                    value={contactForm.message}
+                                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                                    required
+                                />
+                            </div>
 
-                            <button
-                                type="submit"
-                                disabled={contactSubmitting}
-                                className="w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 bg-indigo-600 text-white font-bold text-xs sm:text-sm tracking-wide uppercase hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {contactSubmitting ? 'Submitting…' : 'Submit Inquiry'}
-                            </button>
-                        </form>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={contactSubmitting}
+                                    className="w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 bg-indigo-600 text-white font-bold text-xs sm:text-sm tracking-wide uppercase hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {contactSubmitting ? 'Submitting…' : 'Submit Inquiry'}
+                                </button>
+                                <p className="text-xs text-gray-400 leading-relaxed">
+                                    Your information is used solely for verification correspondence — never shared or published.
+                                </p>
+                            </div>
+                        </motion.form>
 
                     </div>
                 </div>
@@ -682,7 +758,7 @@ const StatItem = ({ number, label }) => (
     </motion.div>
 );
 
-const FeatureCard = ({ icon, title, desc }) => (
+const FeatureCard = ({ icon: Icon, title, desc }) => (
     <motion.div
         className="bg-gray-50 p-6 sm:p-10 border-l-4 border-indigo-600 hover:bg-indigo-600 hover:border-cyan-400 group transition-all duration-300"
         initial={{ opacity: 0, y: 20 }}
@@ -690,7 +766,7 @@ const FeatureCard = ({ icon, title, desc }) => (
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
     >
-        <div className="text-3xl mb-6 group-hover:scale-110 transition-transform">{icon}</div>
+        <Icon className="w-9 h-9 text-indigo-600 group-hover:text-white mb-6 group-hover:scale-110 transition-all" aria-hidden="true" />
         <h3 className="font-black text-xl text-gray-900 group-hover:text-white mb-4 uppercase tracking-wider">
             {title}
         </h3>
