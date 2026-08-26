@@ -27,7 +27,7 @@ const buildDob = (year, month, day) => {
 };
 
 const fieldClass =
-  'w-full bg-white border-2 border-gray-200 px-3 py-3.5 text-gray-900 text-base text-left focus:border-indigo-600 focus:outline-none transition-all duration-200 appearance-none rounded-none';
+  'h-12 w-full rounded-md bg-slate-50 px-3 text-sm font-semibold text-slate-950 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-indigo-600/10 appearance-none';
 
 const DateOfBirthField = ({ value, onChange, min = '1950-01-01', max, required = false }) => {
   const maxDate = max || new Date().toISOString().split('T')[0];
@@ -121,7 +121,7 @@ const DateOfBirthField = ({ value, onChange, min = '1950-01-01', max, required =
         max={maxDate}
         required={required}
         onChange={(e) => onChange(e.target.value)}
-        className={`${fieldClass} hidden sm:block sm:px-6 sm:py-4 sm:text-lg [color-scheme:light] min-h-[3.25rem]`}
+        className={`${fieldClass} hidden px-4 sm:block [color-scheme:light]`}
       />
     </>
   );
