@@ -67,7 +67,7 @@ const AdminSidebar = ({ isMobileOpen, setIsMobileOpen, isCollapsed, setIsCollaps
         { name: 'Dashboard', path: '/patron/dashboard', icon: LayoutDashboard },
         { name: 'Universities', path: '/patron/universities', icon: Building2 },
         { name: 'Departments', path: '/patron/departments', icon: BookOpen },
-        { name: 'Graduates', path: '/patron/users', icon: GraduationCap },
+        { name: 'Graduates', path: '/patron/graduates', icon: GraduationCap },
         { name: 'Degree Review', path: '/patron/degrees', icon: FileText },
         { name: 'Featured Alumni', path: '/patron/featured-graduates', icon: Star },
         { name: 'FAQ Manager', path: '/patron/faq', icon: HelpCircle },

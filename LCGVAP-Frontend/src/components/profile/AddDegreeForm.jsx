@@ -37,8 +37,38 @@ const AddDegreeForm = ({ universities = [], departments = [], onSubmit, onCancel
   const [degreeFile, setDegreeFile] = useState(null);
   const [fileError, setFileError]   = useState('');
 
+  const availableDepartments = (() => {
+    if (!form.university_id) return [];
+
+    const selectedUniversityId = String(form.university_id);
+    const departmentsByName = new Map();
+
+    departments.forEach((department) => {
+      const departmentUniversityId = department.university_id ? String(department.university_id) : '';
+      const isGlobal = !departmentUniversityId;
+      const isForSelectedUniversity = departmentUniversityId === selectedUniversityId;
+
+      if (!isGlobal && !isForSelectedUniversity) return;
+
+      const key = String(department.name || '').trim().toLowerCase();
+      if (!key) return;
+
+      const existing = departmentsByName.get(key);
+      if (!existing || isForSelectedUniversity) {
+        departmentsByName.set(key, department);
+      }
+    });
+
+    return Array.from(departmentsByName.values()).sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
   const handleChange = (e) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm(prev => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'university_id' ? { department_id: '' } : {}),
+    }));
   };
 
   const handleFile = (e) => {
@@ -128,7 +158,7 @@ const AddDegreeForm = ({ universities = [], departments = [], onSubmit, onCancel
       )}
 
       {/* Department */}
-      {departments.length > 0 && (
+      {form.university_id && availableDepartments.length > 0 && (
         <div>
           <label htmlFor="degree-department" className="block text-sm font-medium text-gray-700 mb-1">
             Department
@@ -141,7 +171,7 @@ const AddDegreeForm = ({ universities = [], departments = [], onSubmit, onCancel
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">— Select department —</option>
-            {departments.map(d => (
+            {availableDepartments.map(d => (
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
           </select>

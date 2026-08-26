@@ -29,6 +29,19 @@ const ensureDbSchema = async () => {
       sql: `CREATE INDEX IF NOT EXISTS idx_otp_email_active ON otp_tokens(email, is_used, is_locked, expires_at);`,
     },
     {
+      name: 'departments global scope',
+      sql: `ALTER TABLE departments ALTER COLUMN university_id DROP NOT NULL;`,
+    },
+    {
+      name: 'users archive columns',
+      sql: `
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS archived_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS archive_reason TEXT;
+        CREATE INDEX IF NOT EXISTS idx_users_archived_at ON users(archived_at);
+      `,
+    },
+    {
       name: 'degrees table',
       sql: `
         CREATE TABLE IF NOT EXISTS degrees (

@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Building2, ExternalLink } from 'lucide-react';
 import api from '../services/api';
 import getFileUrl from '../utils/getFileUrl';
+
+const MotionDiv = motion.div;
+const MotionArticle = motion.article;
 
 const FeaturedUniversitiesSection = () => {
     const [universities, setUniversities] = useState([]);
@@ -12,7 +16,7 @@ const FeaturedUniversitiesSection = () => {
             try {
                 const response = await api.get('/universities/featured');
                 setUniversities(response.data || []);
-            } catch (error) {
+            } catch {
                 setUniversities([]);
             } finally {
                 setLoading(false);
@@ -22,16 +26,26 @@ const FeaturedUniversitiesSection = () => {
         fetchFeaturedUniversities();
     }, []);
 
-    /* ---------------------------
-       Loading State (Refined)
-    ---------------------------- */
     if (loading) {
         return (
-            <section className="py-20 bg-white border-b border-gray-200">
-                <div className="container mx-auto px-6">
-                    <div className="max-w-3xl mx-auto text-center space-y-4">
-                        <div className="h-10 w-72 bg-gray-200 rounded animate-pulse mx-auto"></div>
-                        <div className="h-5 w-96 bg-gray-100 rounded animate-pulse mx-auto"></div>
+            <section className="border-y border-slate-200 bg-white py-14 sm:py-16 lg:py-20">
+                <div className="container mx-auto px-4 sm:px-6">
+                    <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                        <div className="max-w-xl space-y-4">
+                            <div className="h-3 w-44 animate-pulse rounded bg-slate-200"></div>
+                            <div className="h-9 w-full max-w-lg animate-pulse rounded bg-slate-100"></div>
+                        </div>
+                        <div className="h-9 w-36 animate-pulse rounded bg-slate-100"></div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[0, 1, 2, 3].map((item) => (
+                            <div key={item} className="min-h-[150px] rounded-md border border-slate-200 bg-slate-50 p-4">
+                                <div className="mb-5 h-14 w-14 animate-pulse rounded-md bg-slate-200"></div>
+                                <div className="mb-3 h-4 w-3/4 animate-pulse rounded bg-slate-200"></div>
+                                <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200"></div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -43,35 +57,35 @@ const FeaturedUniversitiesSection = () => {
     }
 
     return (
-        <section className="bg-white border-b border-gray-200 py-20">
+        <section className="relative overflow-hidden border-y border-slate-200 bg-white py-14 sm:py-16 lg:py-20">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-red-600 via-slate-200 to-indigo-700" aria-hidden="true"></div>
 
-            <div className="container mx-auto px-6">
-
-                {/* Section Header */}
-                <motion.div
-                    className="text-center mb-16 max-w-3xl mx-auto"
-                    initial={{ opacity: 0, y: 20 }}
+            <div className="container mx-auto px-4 sm:px-6">
+                <MotionDiv
+                    className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
+                    initial={{ opacity: 0, y: 18 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: 0.45 }}
                 >
-                    <span className="inline-block border border-indigo-600 text-indigo-700 text-xs font-semibold tracking-widest uppercase px-4 py-1 rounded-full mb-4">
-                        Recognized Academic Institutions
-                    </span>
+                    <div className="max-w-2xl">
+                        <div className="mb-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-indigo-700">
+                            <span className="h-px w-8 bg-indigo-700" aria-hidden="true"></span>
+                            Academic Network
+                        </div>
 
-                    <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
-                        Universities in Northern Cyprus
-                    </h2>
+                        <h2 className="text-3xl font-black leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+                            Universities connected to the registry.
+                        </h2>
+                    </div>
 
-                    <p className="text-lg text-gray-600 leading-relaxed">
-                        The following institutions have contributed to the academic
-                        formation of Liberian graduates recognized within this portal.
-                    </p>
-                </motion.div>
+                    <div className="inline-flex w-fit items-center rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-700">
+                        {universities.length} featured institution{universities.length === 1 ? '' : 's'}
+                    </div>
+                </MotionDiv>
 
-                {/* Universities Grid */}
-                <motion.div
-                    className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                <MotionDiv
+                    className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
                     initial="hidden"
                     whileInView="visible"
                     viewport={{ once: true }}
@@ -79,99 +93,69 @@ const FeaturedUniversitiesSection = () => {
                         hidden: { opacity: 0 },
                         visible: {
                             opacity: 1,
-                            transition: { staggerChildren: 0.08 }
+                            transition: { staggerChildren: 0.06 }
                         }
                     }}
                 >
-                    {universities.map((uni) => (
-                        <UniversityCard key={uni.id} university={uni} />
+                    {universities.map((university) => (
+                        <UniversityCard key={university.id} university={university} />
                     ))}
-                </motion.div>
-
+                </MotionDiv>
             </div>
         </section>
     );
 };
 
-
-/* ===================================================
-   UNIVERSITY CARD (Institutional Version)
-=================================================== */
-
 const UniversityCard = ({ university }) => {
     return (
-        <motion.div
+        <MotionArticle
             variants={{
-                hidden: { opacity: 0, y: 20 },
+                hidden: { opacity: 0, y: 18 },
                 visible: { opacity: 1, y: 0 }
             }}
-            className="
-                bg-white
-                border border-gray-200
-                rounded-2xl
-                p-6
-                shadow-sm
-                hover:shadow-md
-                transition duration-300
-                flex flex-col
-            "
+            className="group flex min-h-[154px] flex-col justify-between rounded-md border border-slate-200 bg-white p-4 shadow-sm transition-[transform,border-color,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
         >
-            {/* Logo Area */}
-            <div className="h-24 flex items-center justify-center mb-6">
-                {university.logo_url ? (
-                    <img
-                        src={getFileUrl(university.logo_url)}
-                        alt={university.name}
-                        className="max-h-20 object-contain"
-                        onError={(e) => {
-                            e.target.style.display = "none";
-                        }}
-                    />
-                ) : (
-                    <div className="text-xs text-gray-400 uppercase tracking-wide">
-                        No Logo Available
-                    </div>
-                )}
+            <div className="flex gap-4">
+                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 p-2">
+                    {university.logo_url ? (
+                        <img
+                            src={getFileUrl(university.logo_url)}
+                            alt={university.name}
+                            className="max-h-10 max-w-full object-contain transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                            }}
+                        />
+                    ) : (
+                        <Building2 className="h-6 w-6 text-indigo-700" aria-hidden="true" />
+                    )}
+                </div>
+
+                <div className="min-w-0">
+                    <h3 className="line-clamp-2 text-base font-black leading-snug text-slate-950">
+                        {university.name}
+                    </h3>
+
+                    {university.country && (
+                        <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                            {university.country}
+                        </p>
+                    )}
+                </div>
             </div>
 
-            {/* Content */}
-            <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {university.name}
-                </h3>
-
-                {university.short_description && (
-                    <p className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-3">
-                        {university.short_description}
-                    </p>
-                )}
-
-                {university.country && (
-                    <p className="text-xs text-gray-500">
-                        Location: {university.country}
-                    </p>
-                )}
-            </div>
-
-            {/* Footer */}
             {university.website_url && (
                 <a
                     href={university.website_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="
-                        mt-6
-                        inline-block
-                        text-sm
-                        font-semibold
-                        text-indigo-700
-                        hover:underline
-                    "
+                    className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-700 transition-colors hover:text-red-600"
                 >
-                    Visit Official Website →
+                    Official site
+                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 </a>
             )}
-        </motion.div>
+        </MotionArticle>
     );
 };
 

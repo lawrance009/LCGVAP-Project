@@ -4,131 +4,123 @@ import Navbar from '../components/Navbar';
 import SiteHeaderBanner from '../components/SiteHeaderBanner';
 import logo from '../assets/logo.jpeg';
 import { BRAND } from '../constants/branding';
-import { ShieldCheck, Mail, Clock, MapPin } from 'lucide-react';
+import {
+  Mail,
+  MapPin,
+} from 'lucide-react';
+
+const footerLinks = [
+  {
+    title: 'Explore',
+    links: [
+      { label: 'Alumni Directory', path: '/directory' },
+      { label: 'About VCLGC', path: '/about' },
+      { label: 'News', path: '/news' },
+      { label: 'Leadership', path: '/leadership' },
+    ],
+  },
+  {
+    title: 'Graduate Services',
+    links: [
+      { label: 'Begin Verification', path: '/register' },
+      { label: 'Graduate Sign In', path: '/login' },
+      { label: 'Verification FAQ', path: '/#verification-guidelines' },
+    ],
+  },
+];
 
 const PublicLayout = () => {
-    const { user, logout } = useAuth();
+  const { user, logout } = useAuth();
 
-    return (
-        <div className="min-h-screen flex flex-col bg-white">
-            {/* Navbar */}
-            <Navbar user={user} logout={logout} />
-            <SiteHeaderBanner />
+  return (
+    <div className="min-h-screen bg-slate-50 text-gray-900">
+      <SiteHeaderBanner />
+      <Navbar user={user} logout={logout} />
 
-            {/* Main Content */}
-            <main className="flex-grow">
-                <Outlet />
-            </main>
+      <main className="min-h-[70vh]">
+        <Outlet />
+      </main>
 
-            {/* --- Institutional Registry Footer --- */}
-            <footer className="bg-gray-900 text-gray-400 mt-24 border-t border-gray-800 relative">
-                <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-cyan-400"></div>
-
-                <div className="container mx-auto px-6 py-16 sm:py-20">
-
-                    <div className="grid md:grid-cols-4 gap-10 lg:gap-12">
-
-                        {/* Platform Identity */}
-                        <div className="md:col-span-2">
-                            <div className="flex items-center gap-3 mb-5">
-                                <img
-                                    src={logo}
-                                    alt={`${BRAND.shortName} Logo`}
-                                    className="h-12 w-12 rounded-full border-2 border-gray-700"
-                                />
-                                <div>
-                                    <h3 className="text-lg font-bold text-white uppercase tracking-wide">
-                                        {BRAND.shortName}
-                                    </h3>
-                                    <p className="text-xs text-cyan-400 font-bold uppercase tracking-wider">
-                                        {BRAND.portalSubtitle}
-                                    </p>
-                                </div>
-                            </div>
-                            <p className="text-sm text-gray-400 leading-relaxed max-w-sm mb-6">
-                                {BRAND.description}
-                            </p>
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-gray-700 text-xs font-bold uppercase tracking-wider text-gray-300">
-                                <ShieldCheck className="w-4 h-4 text-cyan-400" aria-hidden="true" />
-                                Government-Grade Verification
-                            </div>
-                        </div>
-
-                        {/* Registry Navigation */}
-                        <div>
-                            <h4 className="text-white font-bold mb-5 text-xs uppercase tracking-widest">
-                                Registry Access
-                            </h4>
-                            <ul className="space-y-3 text-sm">
-                                <li>
-                                    <Link to="/directory" className="text-gray-400 hover:text-cyan-400 transition-colors">
-                                        Alumni Directory
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/about" className="text-gray-400 hover:text-cyan-400 transition-colors">
-                                        About
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/news" className="text-gray-400 hover:text-cyan-400 transition-colors">
-                                        News
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/leadership" className="text-gray-400 hover:text-cyan-400 transition-colors">
-                                        Leadership
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/register" className="text-gray-400 hover:text-cyan-400 transition-colors">
-                                        Begin Verification
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/login" className="text-gray-400 hover:text-cyan-400 transition-colors">
-                                        Applicant Login
-                                    </Link>
-                                </li>
-                            </ul>
-                        </div>
-
-                        {/* Verification Office */}
-                        <div>
-                            <h4 className="text-white font-bold mb-5 text-xs uppercase tracking-widest">
-                                Verification Office
-                            </h4>
-                            <ul className="space-y-3 text-sm text-gray-400">
-                                <li className="flex items-start gap-2">
-                                    <Mail className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" aria-hidden="true" />
-                                    <span className="break-all">{BRAND.contactEmail}</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <Clock className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" aria-hidden="true" />
-                                    <span>Processing Window: 2–5 Business Days</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <MapPin className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" aria-hidden="true" />
-                                    <span>Monrovia, Republic of Liberia</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                    </div>
-
-                    {/* Footer Bottom */}
-                    <div className="border-t border-gray-800 mt-12 sm:mt-16 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-gray-500 text-center sm:text-left leading-relaxed">
-                        <p>
-                            © {new Date().getFullYear()} {BRAND.portalName} — {BRAND.fullName}. All rights reserved.
-                            <br className="sm:hidden" /> This platform operates solely for alumni credential validation and institutional verification purposes.
-                        </p>
-                        <p className="text-gray-600 shrink-0">Built and developed by NexSolveX.</p>
-                    </div>
-
-                </div>
-            </footer>
+      <footer className="bg-[#0b1020] text-slate-100">
+        <div className="grid h-1 grid-cols-3" aria-hidden="true">
+          <div className="bg-red-600"></div>
+          <div className="bg-white"></div>
+          <div className="bg-indigo-600"></div>
         </div>
-    );
+
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
+            <div className="max-w-xl rounded-md bg-white/[0.03] p-5">
+              <div className="flex items-center gap-3">
+                <img
+                  src={logo}
+                  alt={`${BRAND.shortName} Logo`}
+                  className="h-12 w-12 rounded-md object-cover"
+                />
+                <div>
+                  <p className="text-lg font-extrabold text-white">{BRAND.shortName}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-300">
+                    Verified Alumni Registry
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-5 text-sm leading-7 text-slate-300">
+                {BRAND.fullName} maintains a trusted registry for Liberian
+                graduates from Cyprus, supporting verified records and alumni
+                recognition.
+              </p>
+            </div>
+
+            <div className="grid gap-8 sm:grid-cols-3">
+              {footerLinks.map((group) => (
+                <div key={group.title}>
+                  <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-200">
+                    {group.title}
+                  </h2>
+                  <ul className="mt-4 space-y-3">
+                    {group.links.map((link) => (
+                      <li key={link.path}>
+                        <Link
+                          to={link.path}
+                          className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-200">
+                  Registry Office
+                </h2>
+                <div className="mt-4 space-y-3 text-sm text-slate-300">
+                  <p className="flex gap-3">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />
+                    <span className="break-all">{BRAND.contactEmail}</span>
+                  </p>
+                  <p className="flex gap-3">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-indigo-200" aria-hidden="true" />
+                    <span>Monrovia, Republic of Liberia</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col gap-3 rounded-md bg-white/[0.03] px-4 py-4 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Copyright {new Date().getFullYear()} {BRAND.portalName}. All rights reserved.
+            </p>
+            <p className="text-slate-300">Built and developed by NexSolveX.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 };
 
 export default PublicLayout;

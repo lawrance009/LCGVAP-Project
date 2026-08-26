@@ -157,6 +157,65 @@ const updateUserProfile = async (userId, data) => {
   return result.rows[0];
 };
 
+const graduateAdminMutationReturnColumns = `
+  id,
+  first_name,
+  last_name,
+  email,
+  status,
+  is_verified,
+  verified_at,
+  university_id,
+  department_id,
+  advisor_id,
+  degree_type,
+  degree_file,
+  profile_photo,
+  bio,
+  graduation_year,
+  created_at,
+  updated_at,
+  archived_at,
+  archive_reason,
+  archived_by
+`;
+
+const updateGraduateAdmin = async (userId, data) => {
+  const allowedColumns = new Set([
+    'first_name',
+    'last_name',
+    'email',
+    'bio',
+    'university_id',
+    'department_id',
+    'degree_type',
+    'graduation_year',
+  ]);
+
+  const entries = Object.entries(data)
+    .filter(([key, value]) => allowedColumns.has(key) && value !== undefined);
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const keys = entries.map(([key]) => key);
+  const values = entries.map(([, value]) => value === '' ? null : value);
+  const setClause = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
+
+  const query = `
+    UPDATE users
+    SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $${keys.length + 1}
+      AND role = 'graduate'
+      AND archived_at IS NULL
+    RETURNING ${graduateAdminMutationReturnColumns};
+  `;
+
+  const result = await db.query(query, [...values, userId]);
+  return result.rows[0];
+};
+
 /**
  * Find all verified users with optional filters
  * Used in: Public Directory
@@ -191,14 +250,21 @@ const findAllVerifiedUsers = async (filters = {}) => {
     FROM users u
     LEFT JOIN universities uni ON u.university_id = uni.id
     LEFT JOIN departments dept ON u.department_id = dept.id
-    WHERE u.is_verified = TRUE AND u.role = 'graduate'
+    WHERE u.is_verified = TRUE AND u.role = 'graduate' AND u.archived_at IS NULL
   `;
 
   const values = [];
   let paramCount = 1;
 
   if (search) {
-    query += ` AND (u.first_name ILIKE $${paramCount} OR u.last_name ILIKE $${paramCount})`;
+    query += `
+      AND (
+        u.first_name ILIKE $${paramCount}
+        OR u.last_name ILIKE $${paramCount}
+        OR CONCAT_WS(' ', u.first_name, u.last_name) ILIKE $${paramCount}
+        OR CONCAT_WS(' ', u.last_name, u.first_name) ILIKE $${paramCount}
+      )
+    `;
     values.push(`%${search}%`);
     paramCount++;
   }
@@ -232,14 +298,21 @@ const countAllVerifiedUsers = async (filters = {}) => {
   let query = `
     SELECT COUNT(*)::int AS total
     FROM users u
-    WHERE u.is_verified = TRUE AND u.role = 'graduate'
+    WHERE u.is_verified = TRUE AND u.role = 'graduate' AND u.archived_at IS NULL
   `;
 
   const values = [];
   let paramCount = 1;
 
   if (search) {
-    query += ` AND (u.first_name ILIKE $${paramCount} OR u.last_name ILIKE $${paramCount})`;
+    query += `
+      AND (
+        u.first_name ILIKE $${paramCount}
+        OR u.last_name ILIKE $${paramCount}
+        OR CONCAT_WS(' ', u.first_name, u.last_name) ILIKE $${paramCount}
+        OR CONCAT_WS(' ', u.last_name, u.first_name) ILIKE $${paramCount}
+      )
+    `;
     values.push(`%${search}%`);
     paramCount++;
   }
@@ -263,16 +336,21 @@ const countAllVerifiedUsers = async (filters = {}) => {
 /**
  * Find ALL verified users with FULL details (Admin Only)
  */
-const findAllVerifiedUsersAdmin = async () => {
+const findAllVerifiedUsersAdmin = async ({ archived = false } = {}) => {
   const query = `
     SELECT 
       u.id,
       u.first_name,
       u.last_name,
       u.email,
+      u.passport_number,
+      u.date_of_birth,
       u.status,
       u.is_verified,
       u.verified_at,
+      u.university_id,
+      u.department_id,
+      u.advisor_id,
       u.degree_type,
       u.degree_file,
       u.profile_photo,
@@ -280,15 +358,24 @@ const findAllVerifiedUsersAdmin = async () => {
       u.graduation_year,
       u.created_at,
       u.updated_at,
+      u.archived_at,
+      u.archive_reason,
+      u.archived_by,
       uni.name as university_name, 
       dept.name as department_name,
-      adv.first_name as advisor_first, adv.last_name as advisor_last
+      adv.first_name as advisor_first,
+      adv.last_name as advisor_last,
+      admin.first_name as archived_by_first,
+      admin.last_name as archived_by_last
     FROM users u
     LEFT JOIN universities uni ON u.university_id = uni.id
     LEFT JOIN departments dept ON u.department_id = dept.id
     LEFT JOIN advisors adv ON u.advisor_id = adv.id
-    WHERE u.is_verified = TRUE AND u.role = 'graduate'
-    ORDER BY u.created_at DESC;
+    LEFT JOIN users admin ON u.archived_by = admin.id
+    WHERE u.is_verified = TRUE
+      AND u.role = 'graduate'
+      AND u.archived_at IS ${archived ? 'NOT NULL' : 'NULL'}
+    ORDER BY ${archived ? 'u.archived_at DESC NULLS LAST' : 'u.created_at DESC'};
   `;
   const result = await db.query(query);
   return result.rows;
@@ -326,7 +413,7 @@ const findPublicUserById = async (id) => {
     FROM users u
     LEFT JOIN universities uni ON u.university_id = uni.id
     LEFT JOIN departments dept ON u.department_id = dept.id
-    WHERE u.id = $1 AND u.is_verified = TRUE AND u.role = 'graduate'
+    WHERE u.id = $1 AND u.is_verified = TRUE AND u.role = 'graduate' AND u.archived_at IS NULL
   `;
   const result = await db.query(query, [id]);
   return result.rows[0];
@@ -348,7 +435,10 @@ const findPendingUsers = async () => {
     LEFT JOIN universities uni ON u.university_id = uni.id
     LEFT JOIN departments dept ON u.department_id = dept.id
     LEFT JOIN advisors adv ON u.advisor_id = adv.id
-    WHERE u.is_verified = FALSE AND u.role = 'graduate' AND (u.status IS NULL OR u.status = 'pending')
+    WHERE u.is_verified = FALSE
+      AND u.role = 'graduate'
+      AND u.archived_at IS NULL
+      AND (u.status IS NULL OR u.status = 'pending')
     ORDER BY u.created_at ASC;
   `;
   const result = await db.query(query);
@@ -362,7 +452,7 @@ const verifyUser = async (userId) => {
   const query = `
     UPDATE users
     SET is_verified = TRUE, status = 'verified', verified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $1 AND role = 'graduate'
+    WHERE id = $1 AND role = 'graduate' AND archived_at IS NULL
     RETURNING *;
   `;
   const result = await db.query(query, [userId]);
@@ -452,16 +542,71 @@ const findUserById = async (id) => {
   return result.rows[0];
 };
 
-/**
- * Delete a graduate by ID (only if role = 'graduate')
- */
-const deleteGraduate = async (id) => {
+const archiveGraduate = async (id, adminId, reason = null) => {
+  const client = await db.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const result = await client.query(
+      `
+      UPDATE users
+      SET archived_at = CURRENT_TIMESTAMP,
+          archived_by = $2,
+          archive_reason = $3,
+          status = 'archived',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+        AND role = 'graduate'
+        AND archived_at IS NULL
+      RETURNING ${graduateAdminMutationReturnColumns};
+      `,
+      [id, adminId || null, reason || null]
+    );
+    const archived = result.rows[0] || null;
+
+    if (!archived) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    await client.query(
+      `UPDATE refresh_tokens
+       SET revoked = TRUE
+       WHERE user_id = $1`,
+      [id]
+    );
+
+    await client.query('COMMIT');
+    return archived;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+const restoreGraduate = async (id) => {
   const result = await db.query(
-    "DELETE FROM users WHERE id = $1 AND role = 'graduate' RETURNING id",
+    `
+    UPDATE users
+    SET archived_at = NULL,
+        archived_by = NULL,
+        archive_reason = NULL,
+        status = CASE WHEN is_verified = TRUE THEN 'verified' ELSE 'pending' END,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = $1
+      AND role = 'graduate'
+      AND archived_at IS NOT NULL
+    RETURNING ${graduateAdminMutationReturnColumns};
+    `,
     [id]
   );
   return result.rows[0] || null;
 };
+
+const deleteGraduate = archiveGraduate;
 
 /**
  * Delete any user by ID
@@ -500,9 +645,9 @@ const logFileAccessEvent = async (actorId, action, targetUserId, details, ipAddr
  */
 const getDashboardStats = async () => {
   // We can do this in one query or parallel queries
-  const totalQuery = 'SELECT COUNT(*) FROM users WHERE role = \'graduate\'';
-  const pendingQuery = 'SELECT COUNT(*) FROM users WHERE role = \'graduate\' AND is_verified = FALSE';
-  const verifiedQuery = 'SELECT COUNT(*) FROM users WHERE role = \'graduate\' AND is_verified = TRUE';
+  const totalQuery = 'SELECT COUNT(*) FROM users WHERE role = \'graduate\' AND archived_at IS NULL';
+  const pendingQuery = 'SELECT COUNT(*) FROM users WHERE role = \'graduate\' AND is_verified = FALSE AND archived_at IS NULL';
+  const verifiedQuery = 'SELECT COUNT(*) FROM users WHERE role = \'graduate\' AND is_verified = TRUE AND archived_at IS NULL';
   const uniQuery = 'SELECT COUNT(*) FROM universities';
   const deptQuery = 'SELECT COUNT(*) FROM departments';
 
@@ -530,7 +675,7 @@ const getDashboardStats = async () => {
 const getPublicStats = async () => {
   const statsQuery = `
     SELECT
-      (SELECT COUNT(*) FROM users WHERE role = 'graduate' AND is_verified = TRUE)::int AS verified,
+      (SELECT COUNT(*) FROM users WHERE role = 'graduate' AND is_verified = TRUE AND archived_at IS NULL)::int AS verified,
       (SELECT COUNT(*) FROM universities)::int AS universities,
       (SELECT COUNT(*) FROM departments)::int AS departments
   `;
@@ -552,6 +697,7 @@ module.exports = {
   createUser,
   createAdmin,
   updateUserProfile,
+  updateGraduateAdmin,
   findAllVerifiedUsers,
   countAllVerifiedUsers,
   findAllVerifiedUsersAdmin,
@@ -567,6 +713,8 @@ module.exports = {
   resetAdminLoginAttempts,
   logAuditEvent,
   logFileAccessEvent,
+  archiveGraduate,
+  restoreGraduate,
   getDashboardStats,
   getPublicStats
 };

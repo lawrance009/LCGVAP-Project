@@ -39,7 +39,7 @@ const AdminDepartments = () => {
     const handleOpenModal = (dept = null) => {
         if (dept) {
             setEditingDept(dept);
-            setFormData({ name: dept.name, university_id: dept.university_id });
+            setFormData({ name: dept.name, university_id: dept.university_id || '' });
         } else {
             setEditingDept(null);
             setFormData({ name: '', university_id: '' });
@@ -55,12 +55,21 @@ const AdminDepartments = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const payload = {
+                name: formData.name,
+                university_id: formData.university_id || null
+            };
+
             if (editingDept) {
-                await api.put(`/departments/${editingDept.id}`, formData);
+                await api.put(`/departments/${editingDept.id}`, payload);
                 Swal.fire('Updated!', 'Department updated.', 'success');
             } else {
-                await api.post('/departments', formData);
-                Swal.fire('Created!', 'New department added.', 'success');
+                const response = await api.post('/departments', payload);
+                if (response.data?.already_exists) {
+                    Swal.fire('Already Exists', response.data.message || 'That department is already available.', 'info');
+                } else {
+                    Swal.fire('Created!', 'New department added.', 'success');
+                }
             }
             handleCloseModal();
             // Refetch or update local state
@@ -84,16 +93,19 @@ const AdminDepartments = () => {
 
         if (result.isConfirmed) {
             try {
-                await api.delete(`/departments/${dept.id}`);
-                Swal.fire('Deleted!', 'Department removed.', 'success');
-                setDepartments(prev => prev.filter(d => d.id !== dept.id));
+                const response = await api.delete(`/departments/${dept.id}`);
+                Swal.fire('Deleted!', response.data?.message || 'Department removed.', 'success');
+                const res = await api.get('/departments');
+                setDepartments(res.data);
             } catch (error) {
-                Swal.fire('Error', 'Could not delete department.', 'error');
+                const msg = error.response?.data?.message || 'Could not delete department.';
+                Swal.fire('Error', msg, 'error');
             }
         }
     };
 
     const getUniName = (id) => {
+        if (!id) return 'All Universities';
         const uni = universities.find(u => u.id === id);
         return uni ? uni.name : 'Unknown';
     };
@@ -184,12 +196,11 @@ const AdminDepartments = () => {
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">University</label>
                                             <select
-                                                required
                                                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                                 value={formData.university_id}
                                                 onChange={(e) => setFormData({ ...formData, university_id: e.target.value })}
                                             >
-                                                <option value="">Select University</option>
+                                                <option value="">All Universities</option>
                                                 {universities.map(uni => (
                                                     <option key={uni.id} value={uni.id}>{uni.name}</option>
                                                 ))}

@@ -11,6 +11,7 @@
  */
 
 const degreeModel = require('../models/degreeModel');
+const universityModel = require('../models/universityModel');
 const { validateMagicBytes } = require('../middleware/uploadMiddleware');
 const fs = require('fs');
 
@@ -84,6 +85,20 @@ const addDegree = async (req, res, next) => {
 
     if (!degree_file) {
       return res.status(400).json({ error: 'A degree document (PDF or image) is required' });
+    }
+
+    if (department_id && !university_id) {
+      return res.status(400).json({ error: 'university_id is required when department_id is provided' });
+    }
+
+    if (university_id && department_id) {
+      const chainValidation = await universityModel.validateAcademicChain(
+        university_id,
+        department_id
+      );
+      if (!chainValidation.valid) {
+        return res.status(400).json({ error: chainValidation.message });
+      }
     }
 
     const degree = await degreeModel.createDegree({

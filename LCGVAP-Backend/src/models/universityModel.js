@@ -63,9 +63,11 @@ const deleteUniversity = async (id) => {
 
 const getDepartmentsByUniversity = async (universityId) => {
     const query = `
-    SELECT * FROM departments
-    WHERE university_id = $1
-    ORDER BY name ASC;
+    SELECT DISTINCT ON (LOWER(TRIM(name)))
+      *
+    FROM departments
+    WHERE university_id = $1 OR university_id IS NULL
+    ORDER BY LOWER(TRIM(name)), (university_id IS NULL), name ASC;
   `;
     const result = await pool.query(query, [universityId]);
     return result.rows;
@@ -96,11 +98,15 @@ const getAdvisorById = async (id) => {
 
 /**
  * Validates the academic identity chain
- * Ensures: Department belongs to University
+ * Ensures: Department belongs to University, or is globally available.
  */
 const validateAcademicChain = async (universityId, departmentId) => {
-    // Check if Department belongs to University
-    const deptQuery = 'SELECT id FROM departments WHERE id = $1 AND university_id = $2';
+    // Global departments have university_id = NULL and are valid for every university.
+    const deptQuery = `
+      SELECT id
+      FROM departments
+      WHERE id = $1 AND (university_id = $2 OR university_id IS NULL)
+    `;
     const deptResult = await pool.query(deptQuery, [departmentId, universityId]);
 
     if (deptResult.rows.length === 0) {

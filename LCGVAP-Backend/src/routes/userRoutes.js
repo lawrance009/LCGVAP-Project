@@ -81,10 +81,15 @@ router.put('/me',
 // -------------------------------------------------------
 router.get('/stats',     authenticate, isAdmin, userController.getDashboardStats);
 router.get('/pending',   authenticate, isAdmin, userController.getPendingUsers);
+router.get('/graduates/archive', authenticate, isAdmin, userController.getArchivedGraduatesAdmin);
 router.get('/graduates', authenticate, isAdmin, userController.getAllGraduatesAdmin);
+router.put('/graduates/:id', authenticate, isAdmin, userController.updateGraduateAdmin);
+router.delete('/graduates/:id', authenticate, isAdmin, userController.deleteGraduate);
+router.put('/graduates/:id/restore', authenticate, isAdmin, userController.restoreGraduate);
 router.put('/:id/verify', authenticate, isAdmin, userController.verifyUser);
 router.put('/:id/reject', authenticate, isAdmin, validate(rejectUserSchema), userController.rejectUser);
 router.delete('/:id/graduate', authenticate, isAdmin, userController.deleteGraduate);
+router.put('/:id/graduate/restore', authenticate, isAdmin, userController.restoreGraduate);
 
 // -------------------------------------------------------
 // MASTER ADMIN ROUTES (Boss Admin only)

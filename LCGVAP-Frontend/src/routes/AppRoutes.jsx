@@ -14,7 +14,6 @@ import Dashboard from '../pages/Dashboard';
 import StudentDashboard from '../pages/StudentDashboard';
 import AdminUniversities from '../pages/admin/AdminUniversities';
 import AdminDepartments from '../pages/admin/AdminDepartments';
-import AdminUsers from '../pages/admin/AdminUsers';
 import AdminSlides from '../pages/admin/AdminSlides';
 import AdminVerifiedGraduates from '../pages/admin/AdminVerifiedGraduates';
 import AdminGraduates from '../pages/admin/AdminGraduates';
@@ -68,7 +67,7 @@ const AppRoutes = () => {
                     <Route path="news" element={<AdminNews />} />
                     <Route path="universities" element={<AdminUniversities />} />
                     <Route path="departments" element={<AdminDepartments />} />
-                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="users" element={<AdminVerifiedGraduates />} />
                     <Route path="slides" element={<AdminSlides />} />
                     <Route path="graduates" element={<AdminVerifiedGraduates />} />
                     <Route path="featured-graduates" element={<AdminGraduates />} />

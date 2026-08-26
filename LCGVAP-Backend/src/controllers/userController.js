@@ -1,5 +1,6 @@
 const userModel = require('../models/userModel');
 const degreeModel = require('../models/degreeModel');
+const universityModel = require('../models/universityModel');
 const { validateMagicBytes } = require('../middleware/uploadMiddleware');
 const { sanitizeUserForClient } = require('../utils/sanitizeUser');
 const { normalizeStoredPath } = require('../utils/filePaths');
@@ -162,10 +163,69 @@ const getPublicStats = async (req, res, next) => {
  */
 const getAllGraduatesAdmin = async (req, res, next) => {
     try {
-        const graduates = await userModel.findAllVerifiedUsersAdmin();
-        const safeGraduates = graduates.map(sanitizeUserForClient);
-        res.json(safeGraduates);
+        const graduates = await userModel.findAllVerifiedUsersAdmin({ archived: false });
+        res.json(graduates);
     } catch (error) {
+        next(error);
+    }
+};
+
+const getArchivedGraduatesAdmin = async (req, res, next) => {
+    try {
+        const graduates = await userModel.findAllVerifiedUsersAdmin({ archived: true });
+        res.json(graduates);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const updateGraduateAdmin = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const updates = {};
+        const allowed = [
+            'first_name',
+            'last_name',
+            'email',
+            'bio',
+            'university_id',
+            'department_id',
+            'degree_type',
+            'graduation_year',
+        ];
+
+        for (const key of allowed) {
+            if (req.body[key] !== undefined) updates[key] = req.body[key];
+        }
+
+        if (updates.university_id && updates.department_id) {
+            const chainValidation = await universityModel.validateAcademicChain(
+                updates.university_id,
+                updates.department_id
+            );
+            if (!chainValidation.valid) {
+                return res.status(400).json({ error: chainValidation.message });
+            }
+        }
+
+        const graduate = await userModel.updateGraduateAdmin(id, updates);
+        if (!graduate) {
+            return res.status(404).json({ error: 'Graduate not found or archived' });
+        }
+
+        await userModel.logAuditEvent(
+            req.user.id,
+            'UPDATE_GRADUATE',
+            id,
+            'Graduate updated by admin',
+            req.ip
+        );
+
+        res.json({ message: 'Graduate updated successfully', graduate });
+    } catch (error) {
+        if (error.code === '23505') {
+            return res.status(409).json({ error: 'Email or passport number already belongs to another account.' });
+        }
         next(error);
     }
 };
@@ -459,18 +519,47 @@ const getDashboardStats = async (req, res, next) => {
     }
 };
 
-/**
- * Delete a graduate permanently (Admin)
- * DELETE /users/:id
- */
 const deleteGraduate = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const deleted = await userModel.deleteGraduate(id);
-        if (!deleted) {
+        const { reason } = req.body || {};
+
+        const archived = await userModel.archiveGraduate(id, req.user.id, reason);
+        if (!archived) {
             return res.status(404).json({ error: 'Graduate not found' });
         }
-        res.json({ message: 'Graduate deleted successfully' });
+
+        await userModel.logAuditEvent(
+            req.user.id,
+            'ARCHIVE_GRADUATE',
+            id,
+            `Graduate archived by admin${reason ? `: ${reason}` : ''}`,
+            req.ip
+        );
+
+        res.json({ message: 'Graduate archived successfully', graduate: archived });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const restoreGraduate = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const restored = await userModel.restoreGraduate(id);
+        if (!restored) {
+            return res.status(404).json({ error: 'Archived graduate not found' });
+        }
+
+        await userModel.logAuditEvent(
+            req.user.id,
+            'RESTORE_GRADUATE',
+            id,
+            'Graduate restored from archive',
+            req.ip
+        );
+
+        res.json({ message: 'Graduate restored successfully', graduate: restored });
     } catch (error) {
         next(error);
     }
@@ -517,6 +606,8 @@ module.exports = {
     getGraduates,
     getPublicStats,
     getAllGraduatesAdmin,
+    getArchivedGraduatesAdmin,
+    updateGraduateAdmin,
     getPublicUserProfile,
     signPrivateFileUrl,
     getProtectedUpload,
@@ -525,6 +616,7 @@ module.exports = {
     rejectUser,
     getDashboardStats,
     deleteGraduate,
+    restoreGraduate,
     getAdmins,
     deleteAdmin,
 };

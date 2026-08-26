@@ -69,6 +69,13 @@ const requestOtp = async (req, res, next) => {
       });
     }
 
+    if (user.archived_at) {
+      return res.status(403).json({
+        error: 'This account has been archived. Please contact administration.',
+        code: 'ACCOUNT_ARCHIVED',
+      });
+    }
+
     // STRICT ADMIN SEPARATION: Admins cannot use the OTP flow
     if (user.role === 'admin' || user.role === 'master_admin') {
       return res.status(403).json({ error: 'Admins cannot use the user login portal. Please use the patron entry.' });
@@ -173,6 +180,12 @@ const verifyOtp = async (req, res, next) => {
         code: 'OTP_ROLE_NOT_ALLOWED'
       });
     }
+    if (user.archived_at) {
+      return res.status(403).json({
+        error: 'This account has been archived. Please contact administration.',
+        code: 'ACCOUNT_ARCHIVED',
+      });
+    }
     
     const isNewUser = !user;
 
@@ -237,6 +250,13 @@ const refreshAccessToken = async (req, res, next) => {
     if (!user) {
       res.clearCookie('lcgvap_refresh', jwtUtils.REFRESH_COOKIE_CLEAR_OPTIONS);
       return res.status(401).json({ error: 'User not found. Please log in again.' });
+    }
+    if (user.archived_at) {
+      res.clearCookie('lcgvap_refresh', jwtUtils.REFRESH_COOKIE_CLEAR_OPTIONS);
+      return res.status(403).json({
+        error: 'This account has been archived. Please contact administration.',
+        code: 'ACCOUNT_ARCHIVED'
+      });
     }
     if (user.role === 'graduate' && !user.is_verified) {
       res.clearCookie('lcgvap_refresh', jwtUtils.REFRESH_COOKIE_CLEAR_OPTIONS);

@@ -1,237 +1,393 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Cake,
+  CalendarDays,
+  ImageIcon,
+  Megaphone,
+  Newspaper,
+  SearchX,
+} from 'lucide-react';
 import api from '../services/api';
-import { motion, AnimatePresence } from 'framer-motion';
+import getFileUrl from '../utils/getFileUrl';
+import { BRAND } from '../constants/branding';
+
+const MotionDiv = motion.div;
+const MotionArticle = motion.article;
+
+const filters = [
+  { id: 'all', label: 'All Updates' },
+  { id: 'announcement', label: 'Announcements' },
+  { id: 'birthday', label: 'Celebrations' },
+];
+
+const getFeedType = (item) => (item.type === 'birthday' || item.is_birthday ? 'birthday' : 'announcement');
+
+const formatDate = (date) => {
+  if (!date) return 'Date pending';
+
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const stripHtml = (value = '') => value
+  .replace(/<[^>]*>/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const buildExcerpt = (item) => {
+  const content = stripHtml(item.content || '');
+  if (content.length <= 150) return content;
+  return `${content.slice(0, 150).trim()}...`;
+};
 
 const News = () => {
-    const [feed, setFeed] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('all');
+  const [feed, setFeed] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
 
-    useEffect(() => {
-        fetchNews();
-    }, []);
+  useEffect(() => {
+    fetchNews();
+  }, []);
 
-    const fetchNews = async () => {
-        try {
-            const response = await api.get('/news');
-            setFeed(response.data);
-        } catch (error) {
-            console.error('Error fetching news:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchNews = async () => {
+    setLoading(true);
 
-    const filteredFeed = filter === 'all' ? feed : feed.filter(item => item.type === filter);
-
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen bg-white relative" style={{
-                backgroundImage: `linear-gradient(rgba(229, 231, 235, 0.3) 1px, transparent 1px),
-                                 linear-gradient(90deg, rgba(229, 231, 235, 0.3) 1px, transparent 1px)`,
-                backgroundSize: '40px 40px'
-            }}>
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="w-16 h-16 border-4 border-indigo-600 border-t-transparent"
-                />
-            </div>
-        );
+    try {
+      const response = await api.get('/news');
+      setFeed(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      setFeed([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return (
-        <div className="bg-white min-h-screen relative" style={{
-            backgroundImage: `linear-gradient(rgba(229, 231, 235, 0.3) 1px, transparent 1px),
-                             linear-gradient(90deg, rgba(229, 231, 235, 0.3) 1px, transparent 1px)`,
-            backgroundSize: '40px 40px'
-        }}>
-            {/* Hero Section */}
-            <div className="py-16 sm:py-24 lg:py-32 px-6 bg-white border-b-2 border-gray-100">
-                <div className="max-w-6xl mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        <div className="h-1 w-16 bg-indigo-600 mb-6"></div>
-                        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-gray-900 mb-6 leading-tight">
-                            Community<br/>News & Updates
-                        </h1>
-                        <p className="text-lg sm:text-xl text-gray-600 max-w-2xl">
-                            Stay connected with the latest stories, announcements, and celebrations from our veteran community.
-                        </p>
-                    </motion.div>
-                </div>
-            </div>
+  const normalizedFeed = useMemo(
+    () => feed.map((item) => ({ ...item, feedType: getFeedType(item) })),
+    [feed]
+  );
 
-            {/* Filter Buttons */}
-            <motion.div 
-                className="flex justify-center gap-0 px-6 flex-wrap mt-10 sm:mt-16 mb-10 sm:mb-16"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-            >
-                <button
-                    onClick={() => setFilter('all')}
-                    className={`px-8 py-4 font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
-                        filter === 'all'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                >
-                    All News
-                </button>
-                <button
-                    onClick={() => setFilter('announcement')}
-                    className={`px-8 py-4 font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
-                        filter === 'announcement'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                >
-                    Announcements
-                </button>
-                <button
-                    onClick={() => setFilter('birthday')}
-                    className={`px-8 py-4 font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
-                        filter === 'birthday'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                >
-                    Celebrations
-                </button>
-            </motion.div>
+  const counts = useMemo(() => ({
+    all: normalizedFeed.length,
+    announcement: normalizedFeed.filter((item) => item.feedType === 'announcement').length,
+    birthday: normalizedFeed.filter((item) => item.feedType === 'birthday').length,
+  }), [normalizedFeed]);
 
-            {/* News Feed */}
-            <div className="max-w-7xl mx-auto px-6 pb-16 sm:pb-32">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={filter}
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        variants={{
-                            hidden: { opacity: 0 },
-                            visible: {
-                                opacity: 1,
-                                transition: { staggerChildren: 0.05 }
-                            }
-                        }}
-                    >
-                        {filteredFeed.length > 0 ? (
-                            filteredFeed.map((item, idx) => (
-                                <NewsCard key={item.id} item={item} index={idx} />
-                            ))
-                        ) : (
-                            <motion.div
-                                className="col-span-full text-center py-32"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                            >
-                                <p className="text-3xl text-gray-900 font-black mb-2">No news found in this category.</p>
-                                <p className="text-gray-600 text-lg">Check back soon for more updates!</p>
-                            </motion.div>
-                        )}
-                    </motion.div>
-                </AnimatePresence>
-            </div>
+  const filteredFeed = useMemo(() => (
+    filter === 'all'
+      ? normalizedFeed
+      : normalizedFeed.filter((item) => item.feedType === filter)
+  ), [filter, normalizedFeed]);
+
+  const featuredItem = filteredFeed[0];
+  const gridItems = featuredItem ? filteredFeed.slice(1) : [];
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-950">
+      <section className="relative overflow-hidden bg-[#0b1020] text-white">
+        <img
+          src="https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1920&q=80"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover opacity-25"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-[#0b1020]/75" aria-hidden="true"></div>
+        <div className="absolute inset-x-0 top-0 grid h-1 grid-cols-3" aria-hidden="true">
+          <div className="bg-red-600"></div>
+          <div className="bg-white"></div>
+          <div className="bg-indigo-600"></div>
         </div>
-    );
+
+        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+          <MotionDiv
+            className="max-w-4xl"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          >
+            <div className="mb-5 inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-xs font-bold uppercase text-red-200 backdrop-blur">
+              <Newspaper className="h-4 w-4" aria-hidden="true" />
+              Community Newsroom
+            </div>
+
+            <h1 className="max-w-4xl text-3xl font-black leading-tight sm:text-5xl lg:text-6xl">
+              News, Announcements, And Alumni Moments
+            </h1>
+
+            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
+              Follow official updates from {BRAND.shortName}, community announcements, and verified alumni celebrations
+              in one organized public feed.
+            </p>
+          </MotionDiv>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase text-indigo-700">
+              <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+              Official Feed
+            </div>
+            <h2 className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
+              {loading ? 'Loading community updates...' : `${filteredFeed.length.toLocaleString()} update${filteredFeed.length === 1 ? '' : 's'}`}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {filters.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setFilter(item.id)}
+                className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-xs font-bold transition-colors ${
+                  filter === item.id
+                    ? 'bg-slate-950 text-white'
+                    : 'bg-white text-slate-700 shadow-sm hover:bg-slate-100'
+                }`}
+              >
+                {item.label}
+                <span className={`rounded-full px-2 py-0.5 text-[11px] ${
+                  filter === item.id ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-500'
+                }`}
+                >
+                  {counts[item.id]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading ? (
+          <NewsSkeleton />
+        ) : filteredFeed.length > 0 ? (
+          <AnimatePresence mode="wait">
+            <MotionDiv
+              key={filter}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              {featuredItem && <FeaturedNewsCard item={featuredItem} />}
+
+              {gridItems.length > 0 && (
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {gridItems.map((item, index) => (
+                    <NewsCard key={item.id} item={item} index={index} />
+                  ))}
+                </div>
+              )}
+            </MotionDiv>
+          </AnimatePresence>
+        ) : (
+          <EmptyState filter={filter} />
+        )}
+      </section>
+    </div>
+  );
+};
+
+const FeaturedNewsCard = ({ item }) => {
+  const isBirthday = item.feedType === 'birthday';
+  const imageUrl = getFileUrl(item.image_url);
+
+  return (
+    <MotionArticle
+      className="grid overflow-hidden rounded-md bg-white shadow-sm shadow-slate-950/5 lg:grid-cols-[1.05fr_0.95fr]"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.45, ease: 'easeOut' }}
+    >
+      <div className="relative min-h-[260px] overflow-hidden bg-slate-950 sm:min-h-[340px] lg:min-h-[420px]">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={item.title}
+            className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+          />
+        ) : (
+          <FallbackVisual isBirthday={isBirthday} />
+        )}
+        <div className="absolute left-4 top-4">
+          <FeedBadge isBirthday={isBirthday} />
+        </div>
+      </div>
+
+      <div className="flex flex-col justify-center p-5 sm:p-8 lg:p-10">
+        <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase text-slate-500">
+          <CalendarDays className="h-4 w-4 text-red-600" aria-hidden="true" />
+          {formatDate(item.created_at)}
+        </div>
+
+        <h3 className="text-2xl font-black leading-tight text-slate-950 sm:text-4xl">
+          {item.title}
+        </h3>
+
+        {item.subtitle && (
+          <p className="mt-4 text-sm font-bold leading-6 text-indigo-700 sm:text-base">
+            {item.subtitle}
+          </p>
+        )}
+
+        <p className="mt-5 text-sm leading-7 text-slate-600 sm:text-base">
+          {buildExcerpt(item)}
+        </p>
+
+        {!isBirthday && (
+          <Link
+            to={`/news/${item.id}`}
+            className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-md bg-slate-950 px-5 text-sm font-bold text-white transition-colors hover:bg-indigo-800 sm:w-fit"
+          >
+            Read Full Story
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        )}
+      </div>
+    </MotionArticle>
+  );
 };
 
 const NewsCard = ({ item, index }) => {
-    const isBirthday = item.type === 'birthday';
-    
-    return (
-        <motion.div
-            variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-            }}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className={`group relative bg-white overflow-hidden transition-all duration-300 flex flex-col h-full border-2 hover:bg-gray-50 ${
-                isBirthday ? 'border-cyan-400' : 'border-gray-100'
-            }`}
-        >
-            {/* Badge */}
-            {isBirthday && (
-                <div className="absolute top-0 right-0 z-20">
-                    <span className="bg-cyan-400 text-gray-900 text-xs font-black px-6 py-3 uppercase tracking-wider">
-                        Celebration
-                    </span>
-                </div>
-            )}
+  const isBirthday = item.feedType === 'birthday';
+  const imageUrl = getFileUrl(item.image_url);
 
-            {/* Image Section */}
-            <div className="h-64 w-full relative overflow-hidden">
-                {item.image_url ? (
-                    <img
-                        src={item.image_url}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <div className={`w-full h-full flex items-center justify-center ${isBirthday ? 'bg-cyan-400' : 'bg-indigo-600'}`}>
-                        <span className="text-6xl">
-                            {isBirthday ? '🎂' : '📰'}
-                        </span>
-                    </div>
-                )}
-            </div>
+  return (
+    <MotionArticle
+      className="group flex min-h-[420px] flex-col overflow-hidden rounded-md bg-white shadow-sm shadow-slate-950/5 transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-950/10"
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.25 }}
+      transition={{ duration: 0.42, delay: index * 0.04 }}
+    >
+      <div className="relative h-56 overflow-hidden bg-slate-950">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={item.title}
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <FallbackVisual isBirthday={isBirthday} />
+        )}
+        <div className="absolute left-3 top-3">
+          <FeedBadge isBirthday={isBirthday} />
+        </div>
+      </div>
 
-            {/* Content Section */}
-            <div className="p-6 sm:p-10 flex-1 flex flex-col">
-                <div className="text-xs font-bold text-gray-500 mb-4 uppercase tracking-[0.15em]">
-                    {new Date(item.created_at).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    })}
-                </div>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase text-slate-500">
+          <CalendarDays className="h-4 w-4 text-red-600" aria-hidden="true" />
+          {formatDate(item.created_at)}
+        </div>
 
-                <h3 className="text-2xl font-black text-gray-900 mb-4 line-clamp-2 leading-tight">
-                    {item.title}
-                </h3>
+        <h3 className="line-clamp-2 text-xl font-black leading-tight text-slate-950">
+          {item.title}
+        </h3>
 
-                {item.subtitle && (
-                    <p className="text-indigo-600 font-bold text-base mb-4">
-                        {item.subtitle}
-                    </p>
-                )}
+        {item.subtitle && (
+          <p className="mt-3 line-clamp-2 text-sm font-bold leading-6 text-indigo-700">
+            {item.subtitle}
+          </p>
+        )}
 
-                <div className="text-gray-600 mb-6 flex-1 line-clamp-3 leading-relaxed">
-                    {isBirthday ? item.content : (
-                        <div dangerouslySetInnerHTML={{ __html: item.content.substring(0, 150) + '...' }} />
-                    )}
-                </div>
+        <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">
+          {buildExcerpt(item)}
+        </p>
 
-                {!isBirthday && (
-                    <Link
-                        to={`/news/${item.id}`}
-                        className="inline-flex items-center text-indigo-600 font-bold text-sm uppercase tracking-wider hover:text-gray-900 transition-all duration-300 group/link border-b-2 border-indigo-600 hover:border-gray-900 pb-1 w-fit"
-                    >
-                        Read Full Story
-                        <svg 
-                            className="ml-2 w-4 h-4 group-hover/link:translate-x-1 transition-transform" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
-                            strokeWidth="3"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                    </Link>
-                )}
-            </div>
-        </motion.div>
-    );
+        {!isBirthday && (
+          <div className="mt-auto pt-5">
+            <Link
+              to={`/news/${item.id}`}
+              className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-800 transition-colors hover:bg-slate-950 hover:text-white"
+            >
+              Read Story
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
+      </div>
+    </MotionArticle>
+  );
 };
+
+const FeedBadge = ({ isBirthday }) => (
+  <span
+    className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-black uppercase text-white shadow-sm ${
+      isBirthday ? 'bg-red-600' : 'bg-indigo-700'
+    }`}
+  >
+    {isBirthday ? (
+      <Cake className="h-4 w-4" aria-hidden="true" />
+    ) : (
+      <Megaphone className="h-4 w-4" aria-hidden="true" />
+    )}
+    {isBirthday ? 'Celebration' : 'Announcement'}
+  </span>
+);
+
+const FallbackVisual = ({ isBirthday }) => (
+  <div className={`flex h-full w-full items-center justify-center ${isBirthday ? 'bg-red-700' : 'bg-indigo-800'}`}>
+    <div className="flex h-20 w-20 items-center justify-center rounded-md bg-white/10 text-white">
+      {isBirthday ? (
+        <Cake className="h-10 w-10" aria-hidden="true" />
+      ) : (
+        <ImageIcon className="h-10 w-10" aria-hidden="true" />
+      )}
+    </div>
+  </div>
+);
+
+const NewsSkeleton = () => (
+  <div>
+    <div className="grid overflow-hidden rounded-md bg-white shadow-sm shadow-slate-950/5 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="min-h-[260px] animate-pulse bg-slate-200 sm:min-h-[340px] lg:min-h-[420px]"></div>
+      <div className="space-y-4 p-5 sm:p-8 lg:p-10">
+        <div className="h-4 w-32 animate-pulse rounded bg-slate-200"></div>
+        <div className="h-8 w-3/4 animate-pulse rounded bg-slate-200"></div>
+        <div className="h-4 w-full animate-pulse rounded bg-slate-100"></div>
+        <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100"></div>
+        <div className="h-12 w-36 animate-pulse rounded-md bg-slate-200"></div>
+      </div>
+    </div>
+
+    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="overflow-hidden rounded-md bg-white shadow-sm shadow-slate-950/5">
+          <div className="h-56 animate-pulse bg-slate-200"></div>
+          <div className="space-y-4 p-5">
+            <div className="h-4 w-28 animate-pulse rounded bg-slate-200"></div>
+            <div className="h-6 w-4/5 animate-pulse rounded bg-slate-200"></div>
+            <div className="h-4 w-full animate-pulse rounded bg-slate-100"></div>
+            <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const EmptyState = ({ filter }) => (
+  <div className="rounded-md bg-white px-5 py-14 text-center shadow-sm sm:px-8">
+    <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-md bg-indigo-50 text-indigo-700">
+      <SearchX className="h-6 w-6" aria-hidden="true" />
+    </div>
+    <h2 className="text-2xl font-black text-slate-950">No updates found.</h2>
+    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
+      {filter === 'all'
+        ? 'There are no public news updates yet.'
+        : 'There are no updates in this category right now.'}
+    </p>
+  </div>
+);
 
 export default News;

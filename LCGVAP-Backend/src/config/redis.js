@@ -3,8 +3,8 @@
  * ============================================================
  * Centralized Redis connection manager using ioredis.
  *
- * Supports REDIS_URL (Upstash, Railway plugin) or individual
- * REDIS_HOST / REDIS_PORT / REDIS_PASSWORD vars from Railway.
+ * Supports Redis protocol URLs (Railway/Upstash TCP) plus Upstash REST
+ * credentials for environments where only REST access is configured.
  * Automatically handles reconnections.
  * ============================================================
  */
@@ -18,6 +18,12 @@ const onRailway = Boolean(
 
 const isLocalhostUrl = (url) =>
   Boolean(url && /localhost|127\.0\.0\.1|::1/.test(String(url).trim()));
+
+const normalizeRestUrl = (url) => String(url || '').trim().replace(/\/$/, '');
+
+const upstashRestUrl = normalizeRestUrl(process.env.UPSTASH_REDIS_REST_URL);
+const upstashRestToken = String(process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
+const upstashRestConfigured = Boolean(upstashRestUrl && upstashRestToken);
 
 /** Resolve Redis URL from env (Railway, Upstash, Docker Compose, etc.) */
 const resolveRedisUrl = () => {
@@ -53,26 +59,30 @@ const resolveRedisUrl = () => {
 const redisUrl = resolveRedisUrl();
 
 let redisReady = false;
-let redisDisabled = !redisUrl;
+let redisDisabled = !redisUrl && !upstashRestConfigured;
 
 if (onRailway) {
   logger.info('Railway Redis config', {
     hasRedisUrl: Boolean(process.env.REDIS_URL),
+    hasUpstashRestUrl: Boolean(upstashRestUrl),
+    hasUpstashRestToken: Boolean(upstashRestToken),
     redisUrlIsLocalhost: isLocalhostUrl(process.env.REDIS_URL),
     hasRedisHost: Boolean(process.env.REDISHOST || process.env.REDIS_HOST),
     hasRedisPassword: Boolean(process.env.REDISPASSWORD || process.env.REDIS_PASSWORD),
-    resolved: redisUrl ? 'ok' : 'missing',
+    resolved: redisUrl || upstashRestConfigured ? 'ok' : 'missing',
   });
 }
 
-if (!redisUrl) {
+if (!redisUrl && !upstashRestConfigured) {
   const msg = onRailway
     ? 'Redis not configured on Railway. On the BACKEND service: delete REDIS_URL=localhost, then Add Reference → Redis → REDIS_URL (or REDISHOST + REDISPORT + REDISPASSWORD).'
-    : 'REDIS_URL is not set. Local dev: use redis://localhost:6379 or docker compose. Redis features run in fail-soft mode.';
+    : 'Redis is not configured. Local dev: set REDIS_URL or UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN. Redis features run in fail-soft mode.';
   logger.warn(msg);
 } else if (isLocalhostUrl(redisUrl)) {
   logger.error('Redis URL points to localhost — not valid for cloud deploy.');
   redisDisabled = true;
+} else if (!redisUrl && upstashRestConfigured) {
+  logger.info('Using Upstash Redis REST connection. BullMQ workers require REDIS_URL/rediss:// and will stay disabled.');
 }
 
 const redisOptions = {
@@ -143,7 +153,44 @@ const waitForRedisReady = (client, timeoutMs = 15_000) =>
     client.once('ready', onReady);
   });
 
+const pingUpstashRest = async () => {
+  if (!upstashRestConfigured) return false;
+
+  const response = await fetch(`${upstashRestUrl}/ping`, {
+    headers: {
+      Authorization: `Bearer ${upstashRestToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Upstash REST ping failed with HTTP ${response.status}`);
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (payload.result !== 'PONG') {
+    throw new Error('Upstash REST ping did not return PONG');
+  }
+
+  redisReady = true;
+  redisDisabled = false;
+  logger.info('Connected to Upstash Redis REST successfully');
+  return true;
+};
+
 const initRedis = async () => {
+  if (!redisClient && upstashRestConfigured) {
+    try {
+      return await pingUpstashRest();
+    } catch (err) {
+      redisDisabled = true;
+      redisReady = false;
+      logger.error('Initial Upstash Redis REST connection failed; running in fail-soft mode', {
+        error: err.message,
+      });
+      return false;
+    }
+  }
+
   if (!redisClient || !redisUrl || redisDisabled) {
     redisDisabled = true;
     return false;
@@ -180,7 +227,8 @@ const initRedis = async () => {
   }
 };
 
-const isRedisReady = () => Boolean(redisClient) && redisReady && !redisDisabled;
-const isRedisDisabled = () => redisDisabled || !redisClient;
+const isRedisReady = () => redisReady && !redisDisabled;
+const isRedisRestMode = () => upstashRestConfigured && !redisClient;
+const isRedisDisabled = () => redisDisabled || (!redisClient && !upstashRestConfigured);
 
-module.exports = { redisClient, initRedis, isRedisReady, isRedisDisabled };
+module.exports = { redisClient, initRedis, isRedisReady, isRedisRestMode, isRedisDisabled };
