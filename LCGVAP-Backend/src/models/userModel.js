@@ -606,6 +606,21 @@ const restoreGraduate = async (id) => {
   return result.rows[0] || null;
 };
 
+const purgeArchivedGraduate = async (id) => {
+  const result = await db.query(
+    `
+    DELETE FROM users
+    WHERE id = $1
+      AND role = 'graduate'
+      AND archived_at IS NOT NULL
+    RETURNING id, first_name, last_name, email;
+    `,
+    [id]
+  );
+
+  return result.rows[0] || null;
+};
+
 const deleteGraduate = archiveGraduate;
 
 /**
@@ -707,6 +722,7 @@ module.exports = {
   rejectUser,
   rejectAndPurgeGraduate,
   deleteGraduate,
+  purgeArchivedGraduate,
   deleteUserById,
   findAllAdmins,
   incrementAdminLoginAttempts,

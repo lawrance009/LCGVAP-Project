@@ -13,6 +13,7 @@
  */
 
 import { useState } from 'react';
+import { Button, Field, FileDrop, Input, Select } from '../ui';
 
 const DEGREE_TYPES = [
   { value: 'BACHELOR',  label: "Bachelor's Degree" },
@@ -36,6 +37,7 @@ const AddDegreeForm = ({ universities = [], departments = [], onSubmit, onCancel
   });
   const [degreeFile, setDegreeFile] = useState(null);
   const [fileError, setFileError]   = useState('');
+  const [typeError, setTypeError]   = useState('');
 
   const availableDepartments = (() => {
     if (!form.university_id) return [];
@@ -89,7 +91,8 @@ const AddDegreeForm = ({ universities = [], departments = [], onSubmit, onCancel
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.degree_type) return;
+    // UX fix (Sprint 4): this used to return silently when no type was chosen.
+    if (!form.degree_type) { setTypeError('Choose the type of degree.'); return; }
     if (!degreeFile) { setFileError('Please upload your degree document.'); return; }
 
     const fd = new FormData();
@@ -98,137 +101,87 @@ const AddDegreeForm = ({ universities = [], departments = [], onSubmit, onCancel
     onSubmit(fd);
   };
 
+  const onChangeType = (e) => {
+    setTypeError('');
+    handleChange(e);
+  };
+
+  // FileDrop hands over a File; reuse the existing checks in handleFile.
+  const onSelectFile = (file) => handleFile({ target: { files: [file] } });
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {/* Degree Type */}
-      <div>
-        <label htmlFor="degree-type-select" className="block text-sm font-medium text-gray-700 mb-1">
-          Degree Type <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="degree-type-select"
-          name="degree_type"
-          value={form.degree_type}
-          onChange={handleChange}
-          required
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="">— Select degree type —</option>
+    <form onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2" noValidate>
+      <Field label="Degree type" error={typeError} required>
+        <Select name="degree_type" value={form.degree_type} onChange={onChangeType}>
+          <option value="">Choose a degree type</option>
           {DEGREE_TYPES.map(dt => (
             <option key={dt.value} value={dt.value}>{dt.label}</option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
 
-      {/* Field of Study */}
-      <div>
-        <label htmlFor="degree-field" className="block text-sm font-medium text-gray-700 mb-1">
-          Field of Study
-        </label>
-        <input
-          id="degree-field"
-          type="text"
+      <Field label="Field of study" optional>
+        <Input
           name="field_of_study"
           value={form.field_of_study}
           onChange={handleChange}
-          placeholder="e.g. Computer Science"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="For example, Computer Science"
         />
-      </div>
+      </Field>
 
-      {/* University */}
       {universities.length > 0 && (
-        <div>
-          <label htmlFor="degree-university" className="block text-sm font-medium text-gray-700 mb-1">
-            University
-          </label>
-          <select
-            id="degree-university"
-            name="university_id"
-            value={form.university_id}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">— Select university —</option>
+        <Field label="University" optional>
+          <Select name="university_id" value={form.university_id} onChange={handleChange}>
+            <option value="">Choose a university</option>
             {universities.map(u => (
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Field>
       )}
 
-      {/* Department */}
       {form.university_id && availableDepartments.length > 0 && (
-        <div>
-          <label htmlFor="degree-department" className="block text-sm font-medium text-gray-700 mb-1">
-            Department
-          </label>
-          <select
-            id="degree-department"
-            name="department_id"
-            value={form.department_id}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">— Select department —</option>
+        <Field label="Department" optional>
+          <Select name="department_id" value={form.department_id} onChange={handleChange}>
+            <option value="">Choose a department</option>
             {availableDepartments.map(d => (
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Field>
       )}
 
-      {/* Graduation Year */}
-      <div>
-        <label htmlFor="degree-grad-year" className="block text-sm font-medium text-gray-700 mb-1">
-          Graduation Year
-        </label>
-        <select
-          id="degree-grad-year"
-          name="graduation_year"
-          value={form.graduation_year}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="">— Select year —</option>
+      <Field label="Graduation year" optional>
+        <Select name="graduation_year" value={form.graduation_year} onChange={handleChange}>
+          <option value="">Choose a year</option>
           {GRAD_YEARS.map(y => (
             <option key={y} value={y}>{y}</option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
 
-      {/* Degree File Upload */}
-      <div>
-        <label htmlFor="degree-file-input" className="block text-sm font-medium text-gray-700 mb-1">
-          Degree Document <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="degree-file-input"
-          type="file"
+      <Field
+        label="Degree document"
+        hint="Your official certificate as JPG, PNG, WEBP or PDF, up to 5 MB."
+        error={fileError}
+        required
+        className="sm:col-span-2"
+      >
+        <FileDrop
           accept="image/jpeg,image/png,image/webp,application/pdf"
-          onChange={handleFile}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+          file={degreeFile}
+          onSelect={onSelectFile}
+          prompt="Choose your degree certificate"
         />
-        {fileError && <p className="text-xs text-red-500 mt-1">{fileError}</p>}
-        <p className="text-xs text-gray-400 mt-1">Upload your official degree certificate (JPG, PNG, WEBP, or PDF · max 5 MB)</p>
-      </div>
+      </Field>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-        >
+      <div className="flex flex-col-reverse gap-3 border-t border-line pt-5 sm:col-span-2 sm:flex-row sm:justify-end">
+        <Button variant="ghost" onClick={onCancel}>
           Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-60"
-        >
-          {loading ? 'Submitting…' : 'Submit for Verification'}
-        </button>
+        </Button>
+        <Button type="submit" variant="accent" loading={loading}>
+          {loading ? 'Submitting…' : 'Submit for verification'}
+        </Button>
       </div>
     </form>
   );

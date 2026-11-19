@@ -1,25 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  ArrowRight,
-  BadgeCheck,
-  Cake,
-  CalendarDays,
-  ImageIcon,
-  Megaphone,
-  Newspaper,
-  SearchX,
-} from 'lucide-react';
+import { Cake, Megaphone, Newspaper } from 'lucide-react';
 import api from '../services/api';
 import getFileUrl from '../utils/getFileUrl';
 import { BRAND } from '../constants/branding';
-
-const MotionDiv = motion.div;
-const MotionArticle = motion.article;
+import PageHero from '../components/PageHero';
+import { Container, EmptyState, Skeleton, cn } from '../components/ui';
 
 const filters = [
-  { id: 'all', label: 'All Updates' },
+  { id: 'all', label: 'All updates' },
   { id: 'announcement', label: 'Announcements' },
   { id: 'birthday', label: 'Celebrations' },
 ];
@@ -27,7 +16,7 @@ const filters = [
 const getFeedType = (item) => (item.type === 'birthday' || item.is_birthday ? 'birthday' : 'announcement');
 
 const formatDate = (date) => {
-  if (!date) return 'Date pending';
+  if (!date) return 'Date to be confirmed';
 
   return new Date(date).toLocaleDateString('en-US', {
     month: 'long',
@@ -44,7 +33,7 @@ const stripHtml = (value = '') => value
 const buildExcerpt = (item) => {
   const content = stripHtml(item.content || '');
   if (content.length <= 150) return content;
-  return `${content.slice(0, 150).trim()}...`;
+  return `${content.slice(0, 150).trim()}…`;
 };
 
 const News = () => {
@@ -91,302 +80,170 @@ const News = () => {
   const gridItems = featuredItem ? filteredFeed.slice(1) : [];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <section className="relative overflow-hidden bg-[#0b1020] text-white">
-        <img
-          src="https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1920&q=80"
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-25"
-          aria-hidden="true"
-        />
-        <div className="absolute inset-0 bg-[#0b1020]/75" aria-hidden="true"></div>
-        <div className="absolute inset-x-0 top-0 grid h-1 grid-cols-3" aria-hidden="true">
-          <div className="bg-red-600"></div>
-          <div className="bg-white"></div>
-          <div className="bg-indigo-600"></div>
-        </div>
+    <>
+      <PageHero
+        title="News and announcements"
+        lead={`Official updates from ${BRAND.shortName}, community announcements and celebrations of verified alumni.`}
+      />
 
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-          <MotionDiv
-            className="max-w-4xl"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-          >
-            <div className="mb-5 inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-xs font-bold uppercase text-red-200 backdrop-blur">
-              <Newspaper className="h-4 w-4" aria-hidden="true" />
-              Community Newsroom
-            </div>
+      <Container as="section" aria-labelledby="feed-title" className="py-10 lg:py-14">
+        <div className="flex flex-col gap-5 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <h2 id="feed-title" aria-live="polite" className="font-display text-heading font-semibold text-ink">
+            {loading
+              ? 'Loading updates…'
+              : `${filteredFeed.length.toLocaleString()} ${filteredFeed.length === 1 ? 'update' : 'updates'}`}
+          </h2>
 
-            <h1 className="max-w-4xl text-3xl font-black leading-tight sm:text-5xl lg:text-6xl">
-              News, Announcements, And Alumni Moments
-            </h1>
-
-            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
-              Follow official updates from {BRAND.shortName}, community announcements, and verified alumni celebrations
-              in one organized public feed.
-            </p>
-          </MotionDiv>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase text-indigo-700">
-              <BadgeCheck className="h-4 w-4" aria-hidden="true" />
-              Official Feed
-            </div>
-            <h2 className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-              {loading ? 'Loading community updates...' : `${filteredFeed.length.toLocaleString()} update${filteredFeed.length === 1 ? '' : 's'}`}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {filters.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setFilter(item.id)}
-                className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-xs font-bold transition-colors ${
-                  filter === item.id
-                    ? 'bg-slate-950 text-white'
-                    : 'bg-white text-slate-700 shadow-sm hover:bg-slate-100'
-                }`}
-              >
-                {item.label}
-                <span className={`rounded-full px-2 py-0.5 text-[11px] ${
-                  filter === item.id ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-500'
-                }`}
+          <div role="group" aria-label="Show" className="flex flex-wrap gap-1 rounded-panel bg-tint p-1">
+            {filters.map((item) => {
+              const active = filter === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setFilter(item.id)}
+                  className={cn(
+                    'inline-flex h-10 items-center gap-2 rounded-doc px-3.5 text-caption font-semibold transition-colors duration-150',
+                    active ? 'bg-paper text-primary shadow-[0_1px_2px_rgb(14_26_51/0.12)]' : 'text-muted hover:text-ink'
+                  )}
                 >
-                  {counts[item.id]}
-                </span>
-              </button>
-            ))}
+                  {item.label}
+                  <span className={cn('tabular-nums', active ? 'text-accent' : 'text-faint')}>{counts[item.id]}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {loading ? (
-          <NewsSkeleton />
-        ) : filteredFeed.length > 0 ? (
-          <AnimatePresence mode="wait">
-            <MotionDiv
-              key={filter}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-            >
-              {featuredItem && <FeaturedNewsCard item={featuredItem} />}
+        <div className="mt-10" aria-busy={loading || undefined}>
+          {loading ? (
+            <NewsSkeleton />
+          ) : filteredFeed.length > 0 ? (
+            <div key={filter} className="animate-swap">
+              {featuredItem && <LeadStory item={featuredItem} />}
 
               {gridItems.length > 0 && (
-                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <ul className="mt-12 grid gap-x-8 gap-y-12 border-t border-line pt-12 md:grid-cols-2 xl:grid-cols-3">
                   {gridItems.map((item, index) => (
-                    <NewsCard key={item.id} item={item} index={index} />
+                    <StoryItem key={item.id} item={item} delayMs={Math.min(index, 8) * 50} />
                   ))}
-                </div>
+                </ul>
               )}
-            </MotionDiv>
-          </AnimatePresence>
-        ) : (
-          <EmptyState filter={filter} />
-        )}
-      </section>
+            </div>
+          ) : (
+            <EmptyState
+              icon={Newspaper}
+              title={filter === 'birthday' ? 'No celebrations yet' : filter === 'announcement' ? 'No announcements yet' : 'No updates yet'}
+              description="New posts from the VCLGC team appear here as soon as they are published."
+            />
+          )}
+        </div>
+      </Container>
+    </>
+  );
+};
+
+const FeedType = ({ isBirthday }) => {
+  const Icon = isBirthday ? Cake : Megaphone;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-caption font-semibold text-accent">
+      <Icon className="size-4" strokeWidth={1.75} aria-hidden="true" />
+      {isBirthday ? 'Celebration' : 'Announcement'}
+    </span>
+  );
+};
+
+const StoryImage = ({ item, className }) => {
+  const [failed, setFailed] = useState(false);
+  const imageUrl = getFileUrl(item.image_url);
+  const isBirthday = item.feedType === 'birthday';
+
+  if (!imageUrl || failed) {
+    const Icon = isBirthday ? Cake : Newspaper;
+    return (
+      <div className={cn('flex items-center justify-center bg-deep text-canton-300', className)} aria-hidden="true">
+        <Icon className="size-10" strokeWidth={1.25} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+      className={cn('bg-tint object-cover transition-[scale] duration-500 ease-out-quart group-hover:scale-[1.03]', className)}
+    />
+  );
+};
+
+const LeadStory = ({ item }) => (
+  <article className="group relative grid animate-rise gap-6 lg:grid-cols-12 lg:items-center lg:gap-12">
+    <div className="overflow-hidden rounded-panel lg:col-span-7">
+      <StoryImage item={item} className="aspect-[16/10] w-full" />
     </div>
-  );
-};
-
-const FeaturedNewsCard = ({ item }) => {
-  const isBirthday = item.feedType === 'birthday';
-  const imageUrl = getFileUrl(item.image_url);
-
-  return (
-    <MotionArticle
-      className="grid overflow-hidden rounded-md bg-white shadow-sm shadow-slate-950/5 lg:grid-cols-[1.05fr_0.95fr]"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.45, ease: 'easeOut' }}
-    >
-      <div className="relative min-h-[260px] overflow-hidden bg-slate-950 sm:min-h-[340px] lg:min-h-[420px]">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={item.title}
-            className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-          />
-        ) : (
-          <FallbackVisual isBirthday={isBirthday} />
-        )}
-        <div className="absolute left-4 top-4">
-          <FeedBadge isBirthday={isBirthday} />
-        </div>
+    <div className="lg:col-span-5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <FeedType isBirthday={item.feedType === 'birthday'} />
+        <time dateTime={item.created_at} className="text-caption text-muted">{formatDate(item.created_at)}</time>
       </div>
-
-      <div className="flex flex-col justify-center p-5 sm:p-8 lg:p-10">
-        <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase text-slate-500">
-          <CalendarDays className="h-4 w-4 text-red-600" aria-hidden="true" />
-          {formatDate(item.created_at)}
-        </div>
-
-        <h3 className="text-2xl font-black leading-tight text-slate-950 sm:text-4xl">
+      <h3 className="mt-3 font-display text-heading font-semibold text-balance text-ink sm:text-headline">
+        <Link to={`/news/${item.id}`} className="rounded-doc after:absolute after:inset-0 group-hover:text-primary">
           {item.title}
-        </h3>
-
-        {item.subtitle && (
-          <p className="mt-4 text-sm font-bold leading-6 text-indigo-700 sm:text-base">
-            {item.subtitle}
-          </p>
-        )}
-
-        <p className="mt-5 text-sm leading-7 text-slate-600 sm:text-base">
-          {buildExcerpt(item)}
-        </p>
-
-        {!isBirthday && (
-          <Link
-            to={`/news/${item.id}`}
-            className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-md bg-slate-950 px-5 text-sm font-bold text-white transition-colors hover:bg-indigo-800 sm:w-fit"
-          >
-            Read Full Story
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        )}
-      </div>
-    </MotionArticle>
-  );
-};
-
-const NewsCard = ({ item, index }) => {
-  const isBirthday = item.feedType === 'birthday';
-  const imageUrl = getFileUrl(item.image_url);
-
-  return (
-    <MotionArticle
-      className="group flex min-h-[420px] flex-col overflow-hidden rounded-md bg-white shadow-sm shadow-slate-950/5 transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-950/10"
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 0.42, delay: index * 0.04 }}
-    >
-      <div className="relative h-56 overflow-hidden bg-slate-950">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={item.title}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <FallbackVisual isBirthday={isBirthday} />
-        )}
-        <div className="absolute left-3 top-3">
-          <FeedBadge isBirthday={isBirthday} />
-        </div>
-      </div>
-
-      <div className="flex flex-1 flex-col p-5">
-        <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase text-slate-500">
-          <CalendarDays className="h-4 w-4 text-red-600" aria-hidden="true" />
-          {formatDate(item.created_at)}
-        </div>
-
-        <h3 className="line-clamp-2 text-xl font-black leading-tight text-slate-950">
-          {item.title}
-        </h3>
-
-        {item.subtitle && (
-          <p className="mt-3 line-clamp-2 text-sm font-bold leading-6 text-indigo-700">
-            {item.subtitle}
-          </p>
-        )}
-
-        <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">
-          {buildExcerpt(item)}
-        </p>
-
-        {!isBirthday && (
-          <div className="mt-auto pt-5">
-            <Link
-              to={`/news/${item.id}`}
-              className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-800 transition-colors hover:bg-slate-950 hover:text-white"
-            >
-              Read Story
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </div>
-        )}
-      </div>
-    </MotionArticle>
-  );
-};
-
-const FeedBadge = ({ isBirthday }) => (
-  <span
-    className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-black uppercase text-white shadow-sm ${
-      isBirthday ? 'bg-red-600' : 'bg-indigo-700'
-    }`}
-  >
-    {isBirthday ? (
-      <Cake className="h-4 w-4" aria-hidden="true" />
-    ) : (
-      <Megaphone className="h-4 w-4" aria-hidden="true" />
-    )}
-    {isBirthday ? 'Celebration' : 'Announcement'}
-  </span>
+        </Link>
+      </h3>
+      {item.subtitle && <p className="mt-3 text-lead text-muted">{item.subtitle}</p>}
+      {buildExcerpt(item) && <p className="mt-4 text-body text-muted">{buildExcerpt(item)}</p>}
+      <p className="mt-5 text-caption font-semibold text-primary underline decoration-primary/40 decoration-2 underline-offset-4">
+        Read the full story
+      </p>
+    </div>
+  </article>
 );
 
-const FallbackVisual = ({ isBirthday }) => (
-  <div className={`flex h-full w-full items-center justify-center ${isBirthday ? 'bg-red-700' : 'bg-indigo-800'}`}>
-    <div className="flex h-20 w-20 items-center justify-center rounded-md bg-white/10 text-white">
-      {isBirthday ? (
-        <Cake className="h-10 w-10" aria-hidden="true" />
-      ) : (
-        <ImageIcon className="h-10 w-10" aria-hidden="true" />
-      )}
+const StoryItem = ({ item, delayMs }) => (
+  <li className="group relative animate-rise" style={{ animationDelay: `${delayMs}ms` }}>
+    <div className="overflow-hidden rounded-panel">
+      <StoryImage item={item} className="aspect-[3/2] w-full" />
     </div>
-  </div>
+    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+      <FeedType isBirthday={item.feedType === 'birthday'} />
+      <time dateTime={item.created_at} className="text-caption text-muted">{formatDate(item.created_at)}</time>
+    </div>
+    <h3 className="mt-2 font-display text-title font-semibold text-ink">
+      <Link to={`/news/${item.id}`} className="rounded-doc after:absolute after:inset-0 group-hover:text-primary">
+        {item.title}
+      </Link>
+    </h3>
+    {(item.subtitle || buildExcerpt(item)) && (
+      <p className="mt-2 line-clamp-3 text-caption text-muted">{item.subtitle || buildExcerpt(item)}</p>
+    )}
+  </li>
 );
 
 const NewsSkeleton = () => (
-  <div>
-    <div className="grid overflow-hidden rounded-md bg-white shadow-sm shadow-slate-950/5 lg:grid-cols-[1.05fr_0.95fr]">
-      <div className="min-h-[260px] animate-pulse bg-slate-200 sm:min-h-[340px] lg:min-h-[420px]"></div>
-      <div className="space-y-4 p-5 sm:p-8 lg:p-10">
-        <div className="h-4 w-32 animate-pulse rounded bg-slate-200"></div>
-        <div className="h-8 w-3/4 animate-pulse rounded bg-slate-200"></div>
-        <div className="h-4 w-full animate-pulse rounded bg-slate-100"></div>
-        <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100"></div>
-        <div className="h-12 w-36 animate-pulse rounded-md bg-slate-200"></div>
+  <div aria-hidden="true">
+    <div className="grid gap-6 lg:grid-cols-12 lg:gap-12">
+      <Skeleton className="aspect-[16/10] w-full rounded-panel lg:col-span-7" />
+      <div className="space-y-4 lg:col-span-5">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-2/3" />
       </div>
     </div>
-
-    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="mt-12 grid gap-8 border-t border-line pt-12 md:grid-cols-2 xl:grid-cols-3">
       {[0, 1, 2].map((item) => (
-        <div key={item} className="overflow-hidden rounded-md bg-white shadow-sm shadow-slate-950/5">
-          <div className="h-56 animate-pulse bg-slate-200"></div>
-          <div className="space-y-4 p-5">
-            <div className="h-4 w-28 animate-pulse rounded bg-slate-200"></div>
-            <div className="h-6 w-4/5 animate-pulse rounded bg-slate-200"></div>
-            <div className="h-4 w-full animate-pulse rounded bg-slate-100"></div>
-            <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100"></div>
-          </div>
+        <div key={item} className="space-y-3">
+          <Skeleton className="aspect-[3/2] w-full rounded-panel" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-6 w-4/5" />
         </div>
       ))}
     </div>
-  </div>
-);
-
-const EmptyState = ({ filter }) => (
-  <div className="rounded-md bg-white px-5 py-14 text-center shadow-sm sm:px-8">
-    <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-md bg-indigo-50 text-indigo-700">
-      <SearchX className="h-6 w-6" aria-hidden="true" />
-    </div>
-    <h2 className="text-2xl font-black text-slate-950">No updates found.</h2>
-    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
-      {filter === 'all'
-        ? 'There are no public news updates yet.'
-        : 'There are no updates in this category right now.'}
-    </p>
   </div>
 );
 

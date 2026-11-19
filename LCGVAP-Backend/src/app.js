@@ -37,6 +37,7 @@ const slideRoutes            = require('./routes/slideRoutes');
 const graduateShowcaseRoutes = require('./routes/graduateShowcaseRoutes');
 const faqRoutes              = require('./routes/faqRoutes');
 const uploadRoutes           = require('./routes/uploadRoutes');
+const aiRoutes               = require('./routes/aiRoutes');
 const errorMiddleware        = require('./middleware/errorMiddleware');
 const path = require('path');
 
@@ -93,6 +94,15 @@ const originIsAllowed = (origin) => {
 
   const normalized = normalizeOrigin(origin);
   if (allowedOrigins.includes(normalized)) return true;
+
+  // In local development, Vite may move to another port when 5173 is busy.
+  // Allow localhost loopback ports without weakening production CORS.
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(normalized)
+  ) {
+    return true;
+  }
 
   // Netlify deploy previews: https://deploy-preview-123--lcgvap.netlify.app
   const allowsNetlify = allowedOrigins.some((o) => /lcgvap\.netlify\.app$/i.test(o));
@@ -270,6 +280,7 @@ app.use('/leaders',            require('./routes/leaderRoutes'));
 app.use('/graduates-showcase', graduateShowcaseRoutes);
 app.use('/faq',                faqRoutes);
 app.use('/upload',             uploadRoutes);
+app.use('/ai',                 aiRoutes);
 
 // ── 9. Error Handler ──────────────────────────────────────────
 app.use(errorMiddleware);

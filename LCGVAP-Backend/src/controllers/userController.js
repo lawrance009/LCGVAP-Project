@@ -565,6 +565,29 @@ const restoreGraduate = async (req, res, next) => {
     }
 };
 
+const permanentlyDeleteGraduate = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const purged = await userModel.purgeArchivedGraduate(id);
+
+        if (!purged) {
+            return res.status(404).json({ error: 'Archived graduate not found' });
+        }
+
+        await userModel.logAuditEvent(
+            req.user.id,
+            'PURGE_ARCHIVED_GRADUATE',
+            null,
+            `Archived graduate permanently deleted. Previous user_id=${id}. Graduate=${purged.first_name} ${purged.last_name}`,
+            req.ip
+        );
+
+        res.json({ message: 'Archived graduate permanently deleted', graduate: purged });
+    } catch (error) {
+        next(error);
+    }
+};
+
 /**
  * List all regular admins (Master Admin only)
  * GET /users/admins
@@ -617,6 +640,7 @@ module.exports = {
     getDashboardStats,
     deleteGraduate,
     restoreGraduate,
+    permanentlyDeleteGraduate,
     getAdmins,
     deleteAdmin,
 };

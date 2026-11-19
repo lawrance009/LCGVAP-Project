@@ -25,7 +25,6 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { getMyDegrees, addDegree as apiAddDegree } from '../services/degreeService';
 import Swal from 'sweetalert2';
@@ -34,6 +33,8 @@ import ProfileHeader  from '../components/profile/ProfileHeader';
 import DegreeCard     from '../components/profile/DegreeCard';
 import BadgeList      from '../components/profile/BadgeList';
 import AddDegreeForm  from '../components/profile/AddDegreeForm';
+import { FileText, ImagePlus, Info, Plus } from 'lucide-react';
+import { Button, Container, EmptyState, Field, FileDrop, Input, Panel, Skeleton, Textarea } from '../components/ui';
 
 // ---------------------------------------------------------------
 // Mock data — used only when the backend is unavailable during
@@ -97,8 +98,6 @@ const MOCK_DATA = {
 // ProfilePage
 // ---------------------------------------------------------------
 const ProfilePage = () => {
-  const { user: authUser } = useAuth();
-
   // --- State ---
   const [profile,          setProfile]          = useState(null);
   const [degrees,          setDegrees]          = useState([]);
@@ -234,196 +233,151 @@ const ProfilePage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24" role="status" aria-label="Loading profile">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3" />
-          <p className="text-sm text-gray-500">Loading profile…</p>
+      <Container className="max-w-4xl py-10" aria-busy="true" aria-label="Loading your profile">
+        <div className="flex gap-6 rounded-panel border border-line bg-paper p-8">
+          <Skeleton className="size-32 rounded-full" />
+          <div className="flex-1 space-y-3">
+            <Skeleton className="h-10 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-7 w-32" />
+          </div>
         </div>
-      </div>
+      </Container>
     );
   }
 
   // ── Render ─────────────────────────────────────────────────
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8 space-y-6" id="profile-page">
+    <div className="bg-wash" id="profile-page">
+      <Container className="max-w-4xl space-y-8 py-10 lg:py-12">
+        {/* ── Profile header ─────────────────────────── */}
+        {!loadingProfile && profile && (
+          <ProfileHeader
+            profile={profile}
+            isPremiumVeteran={isPremiumVeteran}
+            onEditClick={() => setIsEditingProfile(true)}
+          />
+        )}
 
-      {/* ── Page Title (screen-reader only) ──────────── */}
-      <h1 className="sr-only">My Profile — VCLGC Alumni Portal</h1>
+        {/* ── Edit profile ───────────────────────────── */}
+        {isEditingProfile && (
+          <Panel as="section" padding="lg" aria-labelledby="edit-profile-heading" className="animate-rise">
+            <h2 id="edit-profile-heading" className="font-display text-title font-semibold text-ink">
+              Edit your profile
+            </h2>
+            <form onSubmit={handleSaveProfile} className="mt-6 grid gap-5 sm:grid-cols-2">
+              <Field label="First name">
+                <Input value={editFirstName} onChange={e => setEditFirstName(e.target.value)} autoComplete="given-name" />
+              </Field>
+              <Field label="Last name">
+                <Input value={editLastName} onChange={e => setEditLastName(e.target.value)} autoComplete="family-name" />
+              </Field>
+              <Field label="Short biography" hint="Shown on your public record." optional className="sm:col-span-2">
+                <Textarea
+                  rows={4}
+                  value={editBio}
+                  onChange={e => setEditBio(e.target.value)}
+                  placeholder="What you studied, where you work now"
+                />
+              </Field>
+              <Field label="Profile photo" optional className="sm:col-span-2">
+                <FileDrop
+                  accept="image/*"
+                  file={editPhoto}
+                  onSelect={file => setEditPhoto(file || null)}
+                  icon={ImagePlus}
+                  prompt="A clear photo of your face"
+                />
+              </Field>
 
-      {/* ── SECTION 1: Profile Header ─────────────────── */}
-      {!loadingProfile && profile && (
-        <ProfileHeader
-          profile={profile}
-          isPremiumVeteran={isPremiumVeteran}
-          onEditClick={() => setIsEditingProfile(true)}
-        />
-      )}
+              <p className="flex gap-2 rounded-doc bg-tint p-3 text-caption text-muted sm:col-span-2">
+                <Info className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden="true" />
+                Your passport number and date of birth are tied to your identity and cannot be changed here.
+                Contact the verification office for corrections.
+              </p>
 
-      {/* ── Edit Profile Form (modal-style inline) ────── */}
-      {isEditingProfile && (
-        <section
-          className="bg-white rounded-lg border border-gray-200 shadow-sm p-6"
-          aria-labelledby="edit-profile-heading"
-        >
-          <h2 id="edit-profile-heading" className="text-base font-semibold text-gray-800 mb-5">
-            Edit Profile Information
-          </h2>
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="edit-first-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  First Name
-                </label>
-                <input
-                  id="edit-first-name"
-                  type="text"
-                  value={editFirstName}
-                  onChange={e => setEditFirstName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+              <div className="flex flex-col-reverse gap-3 border-t border-line pt-5 sm:col-span-2 sm:flex-row sm:justify-end">
+                <Button variant="ghost" onClick={() => setIsEditingProfile(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" loading={savingProfile}>
+                  {savingProfile ? 'Saving…' : 'Save changes'}
+                </Button>
+              </div>
+            </form>
+          </Panel>
+        )}
+
+        {/* ── Badges ─────────────────────────────────── */}
+        {!loadingDegrees && aggregatedBadges.length > 0 && (
+          <Panel padding="lg">
+            <BadgeList badges={aggregatedBadges} />
+          </Panel>
+        )}
+
+        {/* ── Academic credentials ───────────────────── */}
+        <section aria-labelledby="degrees-heading">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h2 id="degrees-heading" className="font-display text-heading font-semibold text-ink">
+              Your degrees
+            </h2>
+            {!showAddDegree && (
+              <Button id="add-degree-btn" variant="secondary" leadingIcon={Plus} onClick={() => setShowAddDegree(true)}>
+                Add a degree
+              </Button>
+            )}
+          </div>
+
+          {showAddDegree && (
+            <Panel padding="lg" className="mt-5 animate-rise">
+              <h3 className="font-display text-title font-semibold text-ink">Submit a degree for verification</h3>
+              <div className="mt-6">
+                <AddDegreeForm
+                  universities={universities}
+                  departments={departments}
+                  onSubmit={handleAddDegree}
+                  onCancel={() => setShowAddDegree(false)}
+                  loading={savingDegree}
                 />
               </div>
-              <div>
-                <label htmlFor="edit-last-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Name
-                </label>
-                <input
-                  id="edit-last-name"
-                  type="text"
-                  value={editLastName}
-                  onChange={e => setEditLastName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="edit-bio" className="block text-sm font-medium text-gray-700 mb-1">
-                Bio
-              </label>
-              <textarea
-                id="edit-bio"
-                rows={4}
-                value={editBio}
-                onChange={e => setEditBio(e.target.value)}
-                placeholder="Tell us about your professional background…"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="edit-photo" className="block text-sm font-medium text-gray-700 mb-1">
-                Profile Photo
-              </label>
-              <input
-                id="edit-photo"
-                type="file"
-                accept="image/*"
-                onChange={e => setEditPhoto(e.target.files[0] || null)}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-              />
-            </div>
-
-            {/* Info notice */}
-            <div className="bg-slate-50 border border-slate-200 rounded-md p-3 text-xs text-slate-600">
-              ℹ Your passport number and date of birth are anchored to your identity and cannot be changed here.
-              Contact support for corrections.
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsEditingProfile(false)}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={savingProfile}
-                className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-60"
-              >
-                {savingProfile ? 'Saving…' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
-
-      {/* ── SECTION 2: Badge Aggregation ──────────────── */}
-      {!loadingDegrees && aggregatedBadges.length > 0 && (
-        <BadgeList badges={aggregatedBadges} />
-      )}
-
-      {/* ── SECTION 3: Academic Credentials ───────────── */}
-      <section aria-labelledby="degrees-heading">
-        <div className="flex items-center justify-between mb-4">
-          <h2
-            id="degrees-heading"
-            className="text-sm font-semibold text-gray-500 uppercase tracking-wide"
-          >
-            Academic Credentials
-          </h2>
-          {!showAddDegree && (
-            <button
-              id="add-degree-btn"
-              onClick={() => setShowAddDegree(true)}
-              className="text-sm text-indigo-600 border border-indigo-300 px-3 py-1.5 rounded-md hover:bg-indigo-50 transition-colors"
-            >
-              + Add Degree
-            </button>
+            </Panel>
           )}
-        </div>
 
-        {/* Add Degree Form */}
-        {showAddDegree && (
-          <div className="bg-white rounded-lg border border-indigo-200 shadow-sm p-5 mb-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-4">
-              Submit New Academic Credential
-            </h3>
-            <AddDegreeForm
-              universities={universities}
-              departments={departments}
-              onSubmit={handleAddDegree}
-              onCancel={() => setShowAddDegree(false)}
-              loading={savingDegree}
-            />
+          <div className="mt-5">
+            {loadingDegrees ? (
+              <div className="space-y-4" aria-hidden="true">
+                <Skeleton className="h-40 w-full rounded-panel" />
+              </div>
+            ) : degrees.length === 0 ? (
+              <Panel padding="none">
+                <EmptyState
+                  icon={FileText}
+                  title="No degrees yet"
+                  description="Add your first degree certificate to start verification."
+                />
+              </Panel>
+            ) : (
+              <div className="grid gap-4">
+                {degrees.map(degree => (
+                  <DegreeCard key={degree.id} degree={degree} />
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </section>
 
-        {/* Degree List */}
-        {loadingDegrees ? (
-          <div className="text-center py-8 text-sm text-gray-400">Loading credentials…</div>
-        ) : degrees.length === 0 ? (
-          /* Edge Case 1: No degrees */
-          <div className="bg-white rounded-lg border border-dashed border-gray-300 p-8 text-center">
-            <p className="text-2xl mb-2" aria-hidden="true">📄</p>
-            <p className="text-gray-500 font-medium mb-1">No academic records yet</p>
-            <p className="text-sm text-gray-400">
-              Click <strong>+ Add Degree</strong> above to submit your first credential for verification.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {degrees.map(degree => (
-              <DegreeCard key={degree.id} degree={degree} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── SECTION 4: Verification Info ──────────────── */}
-      <section aria-labelledby="verification-info-heading">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h2 id="verification-info-heading" className="text-sm font-semibold text-blue-800 mb-1">
-            About Verification
+        {/* ── About verification ─────────────────────── */}
+        <section aria-labelledby="verification-info-heading" className="rounded-panel bg-tint p-6">
+          <h2 id="verification-info-heading" className="font-semibold text-ink">
+            How verification works
           </h2>
-          <p className="text-sm text-blue-700 leading-relaxed">
-            Each degree is individually reviewed by a platform administrator.
-            A verified degree earns a permanent badge. Holding both a verified
-            Bachelor's and Master's degree qualifies you for{' '}
-            <strong>Premium Veteran</strong> status.
+          <p className="mt-1 max-w-measure text-body text-muted">
+            An administrator reviews each degree on its own. Every verified degree earns a badge. Holding both a
+            verified bachelor&apos;s and master&apos;s degree gives you <span className="font-semibold text-ink">Premium veteran</span> status.
           </p>
-        </div>
-      </section>
-    </main>
+        </section>
+      </Container>
+    </div>
   );
 };
 

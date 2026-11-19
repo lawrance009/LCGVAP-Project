@@ -1,18 +1,19 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Select } from './ui';
 
 const MONTHS = [
-  { value: '01', label: 'Jan' },
-  { value: '02', label: 'Feb' },
-  { value: '03', label: 'Mar' },
-  { value: '04', label: 'Apr' },
+  { value: '01', label: 'January' },
+  { value: '02', label: 'February' },
+  { value: '03', label: 'March' },
+  { value: '04', label: 'April' },
   { value: '05', label: 'May' },
-  { value: '06', label: 'Jun' },
-  { value: '07', label: 'Jul' },
-  { value: '08', label: 'Aug' },
-  { value: '09', label: 'Sep' },
-  { value: '10', label: 'Oct' },
-  { value: '11', label: 'Nov' },
-  { value: '12', label: 'Dec' },
+  { value: '06', label: 'June' },
+  { value: '07', label: 'July' },
+  { value: '08', label: 'August' },
+  { value: '09', label: 'September' },
+  { value: '10', label: 'October' },
+  { value: '11', label: 'November' },
+  { value: '12', label: 'December' },
 ];
 
 const parseDob = (iso) => {
@@ -26,14 +27,29 @@ const buildDob = (year, month, day) => {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 
-const fieldClass =
-  'h-12 w-full rounded-md bg-slate-50 px-3 text-sm font-semibold text-slate-950 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-indigo-600/10 appearance-none';
-
-const DateOfBirthField = ({ value, onChange, min = '1950-01-01', max, required = false }) => {
+/**
+ * Date of birth as day / month / year selects on every screen size.
+ *
+ * Defect fix (Sprint 4): partial choices are kept in local state. Before, the
+ * phone selects derived everything from `value`, which stays empty until all
+ * three parts are chosen, so each pick reset itself; and a hidden desktop
+ * <input type="date" required> blocked form submission on phones.
+ *
+ * `onChange` still receives a full ISO date (YYYY-MM-DD) or '' while incomplete.
+ */
+const DateOfBirthField = ({ value, onChange, min = '1950-01-01', max, required = false, invalid = false, describedBy }) => {
   const maxDate = max || new Date().toISOString().split('T')[0];
   const minYear = parseInt(min.split('-')[0], 10);
   const maxYear = parseInt(maxDate.split('-')[0], 10);
-  const parts = parseDob(value);
+  const [parts, setParts] = useState(() => parseDob(value));
+
+  // Follow outside changes (e.g. a reset) without fighting partial input.
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    if (value) setParts(parseDob(value));
+    else if (buildDob(parts.year, parts.month, parts.day)) setParts({ year: '', month: '', day: '' });
+  }
 
   const years = useMemo(
     () => Array.from({ length: maxYear - minYear + 1 }, (_, i) => String(maxYear - i)),
@@ -60,70 +76,45 @@ const DateOfBirthField = ({ value, onChange, min = '1950-01-01', max, required =
       }
     }
 
-    onChange(buildDob(next.year, next.month, next.day));
+    setParts(next);
+    const iso = buildDob(next.year, next.month, next.day);
+    setLastValue(iso);
+    onChange(iso);
+  };
+
+  const common = {
+    required,
+    'aria-invalid': invalid || undefined,
+    'aria-describedby': describedBy,
   };
 
   return (
-    <>
-      {/* Mobile: separate selects — reliable on iOS/Android */}
-      <div className="grid grid-cols-3 gap-2 sm:hidden">
-        <select
-          aria-label="Birth month"
-          value={parts.month}
-          required={required && !value}
-          onChange={(e) => updatePart('month', e.target.value)}
-          className={fieldClass}
-        >
-          <option value="">Month</option>
-          {MONTHS.map((month) => (
-            <option key={month.value} value={month.value}>
-              {month.label}
-            </option>
-          ))}
-        </select>
-
-        <select
-          aria-label="Birth day"
-          value={parts.day}
-          required={required && !value}
-          onChange={(e) => updatePart('day', e.target.value)}
-          className={fieldClass}
-        >
-          <option value="">Day</option>
-          {days.map((day) => (
-            <option key={day} value={day}>
-              {parseInt(day, 10)}
-            </option>
-          ))}
-        </select>
-
-        <select
-          aria-label="Birth year"
-          value={parts.year}
-          required={required && !value}
-          onChange={(e) => updatePart('year', e.target.value)}
-          className={fieldClass}
-        >
-          <option value="">Year</option>
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Desktop: native date picker */}
-      <input
-        type="date"
-        value={value}
-        min={min}
-        max={maxDate}
-        required={required}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${fieldClass} hidden px-4 sm:block [color-scheme:light]`}
-      />
-    </>
+    <div className="grid grid-cols-[1fr_1.6fr_1.2fr] gap-2">
+      <Select aria-label="Day of birth" value={parts.day} onChange={(e) => updatePart('day', e.target.value)} {...common}>
+        <option value="">Day</option>
+        {days.map((day) => (
+          <option key={day} value={day}>
+            {parseInt(day, 10)}
+          </option>
+        ))}
+      </Select>
+      <Select aria-label="Month of birth" value={parts.month} onChange={(e) => updatePart('month', e.target.value)} {...common}>
+        <option value="">Month</option>
+        {MONTHS.map((month) => (
+          <option key={month.value} value={month.value}>
+            {month.label}
+          </option>
+        ))}
+      </Select>
+      <Select aria-label="Year of birth" value={parts.year} onChange={(e) => updatePart('year', e.target.value)} {...common}>
+        <option value="">Year</option>
+        {years.map((year) => (
+          <option key={year} value={year}>
+            {year}
+          </option>
+        ))}
+      </Select>
+    </div>
   );
 };
 

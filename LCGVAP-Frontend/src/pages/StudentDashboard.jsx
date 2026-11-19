@@ -11,20 +11,11 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Check, ChevronRight, CircleAlert, FileText, PlusCircle, Search, UserRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { motion } from 'framer-motion';
-import {
-  BadgeCheck,
-  AlertTriangle,
-  UserCircle2,
-  PlusCircle,
-  Search,
-  GraduationCap,
-  Clock3,
-  FileWarning,
-  FileText,
-} from 'lucide-react';
+import { formatDegreeType } from '../utils/degreeDisplay';
+import { Container, EmptyState, Seal, Skeleton, StatusTag, cn } from '../components/ui';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -46,201 +37,198 @@ const StudentDashboard = () => {
   const isVerified = user?.is_verified;
 
   const steps = [
-    { done: true, label: 'Account Created', desc: 'Your registration was received.' },
-    { done: degrees.length > 0, label: 'Degree Submitted', desc: 'At least one degree document uploaded.' },
-    { done: verified.length > 0, label: 'Degree Verified', desc: 'An admin has verified your credential.' },
-    { done: isVerified, label: 'Directory Ready', desc: 'Your public alumni profile is now discoverable.' },
+    { done: true, label: 'Account created', desc: 'Your application was received.' },
+    { done: degrees.length > 0, label: 'Degree submitted', desc: 'At least one degree document is uploaded.' },
+    { done: verified.length > 0, label: 'Degree verified', desc: 'An administrator has verified a degree.' },
+    { done: isVerified, label: 'On the register', desc: 'Your public record can be found in the directory.' },
+  ];
+  const currentStep = steps.findIndex(s => !s.done);
+
+  const counts = [
+    { label: 'Degrees submitted', value: degrees.length },
+    { label: 'Verified', value: verified.length },
+    { label: 'In review', value: pending.length },
+    { label: 'Need attention', value: rejected.length, alert: rejected.length > 0 },
   ];
 
-  const completedSteps = steps.filter(s => s.done).length;
-  const progressPercent = Math.round((completedSteps / steps.length) * 100);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-blue-50/20 py-8 px-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <motion.section
-          initial={{ opacity: 0, y: -16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6"
-        >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-            <div>
-              <h1 className="text-2xl font-extrabold text-gray-900">Veteran Dashboard</h1>
-              <p className="text-sm text-gray-500 mt-1">Welcome back, {firstName}. Track your verification journey and manage your credentials.</p>
+    <div className="bg-wash">
+      {/* Greeting */}
+      <section className="overflow-x-clip border-b border-line bg-paper">
+        <Container className="flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:justify-between lg:py-12">
+          <div>
+            <h1 className="font-display text-headline font-semibold text-balance text-ink">Welcome back, {firstName}</h1>
+            <p className="mt-2 text-lead text-muted">
+              {isVerified
+                ? 'Your record is on the register. Keep your degrees and profile up to date here.'
+                : 'Your application is in review. This page shows where each degree stands.'}
+            </p>
+            <div className="mt-4">
+              <StatusTag status={isVerified ? 'verified' : 'pending'}>
+                {isVerified ? 'Verified graduate' : 'Verification in progress'}
+              </StatusTag>
             </div>
-            <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border ${
-              isVerified
-                ? 'bg-green-50 text-green-700 border-green-200'
-                : 'bg-yellow-50 text-yellow-700 border-yellow-200'
-            }`}>
-              {isVerified ? (
-                <BadgeCheck className="w-3.5 h-3.5" />
-              ) : (
-                <Clock3 className="w-3.5 h-3.5" />
-              )}
-              {isVerified ? 'Verified Veteran' : 'Pending Veteran Verification'}
-            </span>
           </div>
+          {isVerified && <Seal size="lg" stamped className="size-28 shrink-0 self-start sm:self-center" />}
+        </Container>
+      </section>
 
-          <div className="mt-5">
-            <div className="flex items-center justify-between text-xs mb-2">
-              <span className="font-semibold text-gray-600">Onboarding Progress</span>
-              <span className="font-bold text-indigo-700">{progressPercent}%</span>
-            </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-2 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
+      <Container className="space-y-8 py-10 lg:py-12">
+        {/* Progress */}
+        <section aria-labelledby="progress-title" className="rounded-panel border border-line bg-paper p-6 sm:p-8">
+          <h2 id="progress-title" className="font-display text-title font-semibold text-ink">Your verification</h2>
+          <ol className="relative mt-8 md:grid md:grid-cols-4 md:gap-6">
+            <span aria-hidden="true" className="absolute top-5 right-[12.5%] left-[12.5%] hidden h-0.5 bg-line md:block">
+              <span
+                className="absolute inset-y-0 left-0 bg-primary transition-[width] duration-700 ease-out-quart"
+                style={{ width: `${Math.max(0, (currentStep === -1 ? steps.length - 1 : currentStep - 1)) / (steps.length - 1) * 100}%` }}
               />
-            </div>
-          </div>
-        </motion.section>
-
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Total Degrees', value: degrees.length, icon: GraduationCap },
-            { label: 'Verified', value: verified.length, icon: BadgeCheck },
-            { label: 'Pending Review', value: pending.length, icon: Clock3 },
-            { label: 'Needs Attention', value: rejected.length, icon: FileWarning },
-          ].map((stat) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm p-4"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">{stat.label}</p>
-                <stat.icon className="w-5 h-5 text-indigo-600" />
-              </div>
-              <p className="text-2xl font-extrabold text-gray-900 mt-3">
-                {loading ? <span className="inline-block w-6 h-6 rounded bg-gray-200 animate-pulse" /> : stat.value}
-              </p>
-            </motion.div>
-          ))}
+            </span>
+            {steps.map((step, i) => {
+              const isCurrent = i === currentStep;
+              return (
+                <li
+                  key={step.label}
+                  aria-current={isCurrent ? 'step' : undefined}
+                  className="relative grid grid-cols-[2.5rem_1fr] gap-x-4 pb-8 last:pb-0 md:flex md:flex-col md:items-center md:pb-0 md:text-center"
+                >
+                  {i < steps.length - 1 && (
+                    <span aria-hidden="true" className={cn('absolute top-10 bottom-0 left-[19px] w-0.5 md:hidden', step.done ? 'bg-primary' : 'bg-line')} />
+                  )}
+                  <span
+                    className={cn(
+                      'relative z-10 flex size-10 items-center justify-center rounded-full border-2 font-semibold',
+                      step.done && 'border-primary bg-primary text-on-primary',
+                      isCurrent && 'border-primary bg-paper text-primary',
+                      !step.done && !isCurrent && 'border-line-strong bg-paper text-muted'
+                    )}
+                  >
+                    {step.done ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : i + 1}
+                  </span>
+                  <div className="pt-1.5 md:mt-3 md:pt-0">
+                    <p className={cn('font-semibold', step.done ? 'text-ink' : isCurrent ? 'text-accent' : 'text-muted')}>
+                      {step.label}
+                      <span className="sr-only">{step.done ? ' (done)' : isCurrent ? ' (next)' : ' (to do)'}</span>
+                    </p>
+                    <p className="mt-0.5 text-caption text-muted">{step.desc}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
         </section>
 
-        <section className="grid lg:grid-cols-3 gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:col-span-1 space-y-6"
-          >
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <h2 className="text-base font-bold text-gray-800 mb-4">Quick Actions</h2>
-              <div className="space-y-3">
-                <Link to="/profile" className="flex items-center gap-3 p-3 rounded-xl border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition">
-                  <UserCircle2 className="w-5 h-5 text-indigo-700" />
-                  <div>
-                    <p className="text-sm font-bold text-indigo-800">Manage Profile</p>
-                    <p className="text-xs text-indigo-500">Update bio and veteran details</p>
-                  </div>
-                </Link>
-                <Link to="/profile" className="flex items-center gap-3 p-3 rounded-xl border border-emerald-100 bg-emerald-50 hover:bg-emerald-100 transition">
-                  <PlusCircle className="w-5 h-5 text-emerald-700" />
-                  <div>
-                    <p className="text-sm font-bold text-emerald-800">Submit New Degree</p>
-                    <p className="text-xs text-emerald-500">Upload credential for review</p>
-                  </div>
-                </Link>
-                <Link to="/directory" className="flex items-center gap-3 p-3 rounded-xl border border-blue-100 bg-blue-50 hover:bg-blue-100 transition">
-                  <Search className="w-5 h-5 text-blue-700" />
-                  <div>
-                    <p className="text-sm font-bold text-blue-800">Browse Directory</p>
-                    <p className="text-xs text-blue-500">Explore verified veterans</p>
-                  </div>
-                </Link>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <h2 className="text-base font-bold text-gray-800 mb-4">Verification Checklist</h2>
-              <div className="space-y-4">
-                {steps.map((step, i) => (
-                  <div key={step.label} className="flex items-start gap-3">
-                    <div className={`mt-0.5 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
-                      step.done ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-300 text-gray-400'
-                    }`}>
-                        {step.done ? <BadgeCheck className="w-3.5 h-3.5" /> : i + 1}
-                    </div>
-                    <div>
-                      <p className={`text-sm font-semibold ${step.done ? 'text-green-700' : 'text-gray-600'}`}>{step.label}</p>
-                      <p className="text-xs text-gray-400">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="lg:col-span-2 space-y-6"
-          >
-            {rejected.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-                <h3 className="font-bold text-red-800 mb-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  Action Required: Rejected Credentials
-                </h3>
-                <p className="text-sm text-red-700 mb-3">
-                  {rejected.length} credential{rejected.length > 1 ? 's were' : ' was'} rejected. Review feedback and resubmit from your profile.
-                </p>
-                <div className="space-y-2">
-                  {rejected.slice(0, 3).map(d => (
-                    <div key={d.id} className="bg-white border border-red-200 rounded-lg p-3">
-                      <p className="text-sm font-semibold text-gray-800">{d.degree_type} {d.university_name ? `— ${d.university_name}` : ''}</p>
-                      <p className="text-xs text-red-600 mt-1">Reason: {d.rejection_reason}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-gray-800">Credential Pipeline</h2>
-                <Link to="/profile" className="text-xs text-indigo-600 font-semibold hover:underline">Open Full Profile →</Link>
-              </div>
-
-              {loading ? (
-                <p className="text-sm text-gray-400 py-6">Loading credentials…</p>
-              ) : degrees.length === 0 ? (
-                <div className="text-center py-10 border border-dashed border-gray-300 rounded-xl bg-gray-50">
-                  <FileText className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 font-medium">No credentials submitted yet</p>
-                  <p className="text-xs text-gray-400 mt-1">Submit your first degree to begin verification.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {degrees.map(d => {
-                    const tone = d.is_verified
-                      ? 'bg-green-100 text-green-700'
-                      : d.rejection_reason
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-yellow-100 text-yellow-700';
-                    const status = d.is_verified ? 'Verified' : d.rejection_reason ? 'Rejected' : 'Pending';
-                    return (
-                      <div key={d.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-gray-800">{d.degree_type}</p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {d.university_name || 'University not set'}
-                            {d.graduation_year ? ` · ${d.graduation_year}` : ''}
-                          </p>
-                        </div>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${tone}`}>{status}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+        {/* Counts */}
+        <dl className="grid grid-cols-2 overflow-hidden rounded-panel border border-line bg-paper md:grid-cols-4" aria-busy={loading || undefined}>
+          {counts.map((count, i) => (
+            <div
+              key={count.label}
+              className={cn(
+                'flex flex-col-reverse px-5 py-5 sm:px-6',
+                i % 2 === 1 && 'border-l border-line',
+                i >= 2 && 'border-t border-line md:border-t-0',
+                i === 2 && 'md:border-l'
               )}
+            >
+              <dt className="text-caption text-muted">{count.label}</dt>
+              <dd className={cn('font-display text-headline leading-tight font-semibold tabular-nums', count.alert ? 'text-danger' : 'text-ink')}>
+                {loading ? <Skeleton className="my-1.5 h-8 w-10" /> : count.value}
+              </dd>
             </div>
-          </motion.div>
-        </section>
-      </div>
+          ))}
+        </dl>
+
+        {rejected.length > 0 && (
+          <section role="alert" className="rounded-panel border border-danger/30 bg-danger-soft p-6">
+            <h2 className="flex items-center gap-2 font-semibold text-danger">
+              <CircleAlert className="size-5" strokeWidth={1.75} aria-hidden="true" />
+              {rejected.length === 1 ? 'One degree needs your attention' : `${rejected.length} degrees need your attention`}
+            </h2>
+            <p className="mt-1 text-body text-ink">Read the reason, then submit a corrected document from your profile.</p>
+            <ul className="mt-4 space-y-2">
+              {rejected.slice(0, 3).map(d => (
+                <li key={d.id} className="rounded-doc border border-danger/20 bg-paper p-3">
+                  <p className="font-semibold text-ink">
+                    {formatDegreeType(d.degree_type)}
+                    {d.university_name ? `, ${d.university_name}` : ''}
+                  </p>
+                  <p className="mt-0.5 text-caption text-danger">Reason: {d.rejection_reason}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <div className="grid gap-8 lg:grid-cols-12">
+          {/* Credentials */}
+          <section aria-labelledby="credentials-title" className="rounded-panel border border-line bg-paper lg:col-span-8">
+            <div className="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
+              <h2 id="credentials-title" className="font-display text-title font-semibold text-ink">Your degrees</h2>
+              <Link to="/profile" className="inline-flex items-center gap-1 rounded-doc py-2.5 -my-2.5 text-caption font-semibold text-primary underline-offset-4 hover:underline">
+                Manage degrees
+                <ChevronRight className="size-4" strokeWidth={1.75} aria-hidden="true" />
+              </Link>
+            </div>
+
+            {loading ? (
+              <div className="space-y-3 p-6" aria-hidden="true">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : degrees.length === 0 ? (
+              <EmptyState
+                icon={FileText}
+                title="No degrees submitted yet"
+                description="Submit your first degree certificate to start verification."
+              />
+            ) : (
+              <ul>
+                {degrees.map(d => (
+                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4 last:border-b-0">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-ink">{formatDegreeType(d.degree_type)}</p>
+                      <p className="text-caption text-muted">
+                        {d.university_name || 'University not set'}
+                        {d.graduation_year ? `, ${d.graduation_year}` : ''}
+                      </p>
+                    </div>
+                    <StatusTag status={d.is_verified ? 'verified' : d.rejection_reason ? 'rejected' : 'pending'}>
+                      {d.is_verified ? 'Verified' : d.rejection_reason ? 'Needs attention' : 'In review'}
+                    </StatusTag>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* Quick links */}
+          <nav aria-labelledby="actions-title" className="rounded-panel border border-line bg-paper lg:col-span-4">
+            <h2 id="actions-title" className="border-b border-line px-6 py-4 font-display text-title font-semibold text-ink">
+              Shortcuts
+            </h2>
+            <ul>
+              {[
+                { to: '/profile', icon: UserRound, label: 'Edit your profile', desc: 'Photo, name and short biography' },
+                { to: '/profile', icon: PlusCircle, label: 'Submit another degree', desc: 'Add a credential for review' },
+                { to: '/directory', icon: Search, label: 'Search the register', desc: 'Find other verified graduates' },
+              ].map(item => (
+                <li key={item.label} className="border-b border-line last:border-b-0">
+                  <Link to={item.to} className="group flex items-center gap-4 px-6 py-4 hover:bg-wash">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-tint text-primary">
+                      <item.icon className="size-5" strokeWidth={1.75} aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold text-ink group-hover:text-primary">{item.label}</span>
+                      <span className="block text-caption text-muted">{item.desc}</span>
+                    </span>
+                    <ChevronRight className="size-5 text-faint group-hover:text-primary" strokeWidth={1.75} aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </Container>
     </div>
   );
 };

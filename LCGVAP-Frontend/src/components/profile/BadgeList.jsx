@@ -19,34 +19,23 @@ const BadgeList = ({ badges = [] }) => {
   if (badges.length === 0) return null;
 
   return (
-    <section
-      className="bg-white rounded-lg border border-gray-200 shadow-sm p-5"
-      aria-labelledby="badges-heading"
-    >
-      <h2
-        id="badges-heading"
-        className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4"
-      >
-        Verified Academic Badges
+    <section aria-labelledby="badges-heading">
+      <h2 id="badges-heading" className="font-display text-title font-semibold text-ink">
+        Academic badges
       </h2>
 
-      <ul className="flex flex-wrap gap-3" role="list">
+      <ul className="mt-4 flex flex-wrap gap-3">
         {badges.map((badge, index) => (
-          <li key={badge.id ?? index}>
-            <div className="flex items-center gap-2.5 bg-gradient-to-br from-slate-50 to-gray-100 border border-gray-200 rounded-lg px-4 py-2.5 shadow-sm">
-              <span
-                aria-hidden="true"
-                className="text-2xl leading-none"
-                role="img"
-              >
-                {badge.icon || '🎓'}
+          <li key={badge.id ?? index} className="flex items-center gap-3 rounded-doc bg-tint px-4 py-2.5">
+            {/* Badge icon is server-provided data. */}
+            {badge.icon && (
+              <span aria-hidden="true" className="text-2xl leading-none">
+                {badge.icon}
               </span>
-              <div>
-                <p className="text-sm font-semibold text-gray-800">{badge.name}</p>
-                {badge.description && (
-                  <p className="text-xs text-gray-500">{badge.description}</p>
-                )}
-              </div>
+            )}
+            <div>
+              <p className="text-caption font-semibold text-primary">{badge.name}</p>
+              {badge.description && <p className="text-caption text-muted">{badge.description}</p>}
             </div>
           </li>
         ))}

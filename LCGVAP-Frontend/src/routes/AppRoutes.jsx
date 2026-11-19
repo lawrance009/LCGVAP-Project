@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PublicLayout from '../layouts/PublicLayout';
 import AdminLayout from '../layouts/AdminLayout';
@@ -28,12 +29,29 @@ import AdminRegister from '../pages/AdminRegister';
 import About from '../pages/About';
 import AdminManageAdmins from '../pages/admin/AdminManageAdmins';
 
-// Placeholder Pages
-const NotFound = () => <div className="p-8 text-center text-red-500">404 Not Found</div>;
+import NotFound from '../pages/NotFound';
+
+// Dev-only preview of the UI kit (docs/redesign/components.md).
+// The import is behind import.meta.env.DEV so it is dropped from production builds.
+const UiKitPreview = import.meta.env.DEV ? lazy(() => import('../pages/dev/UiKitPreview')) : null;
+const MemberPreview = import.meta.env.DEV ? lazy(() => import('../pages/dev/MemberPreview')) : null;
 
 const AppRoutes = () => {
     return (
         <Routes>
+            {UiKitPreview && (
+                <Route
+                    path="/__kit"
+                    element={<Suspense fallback={null}><UiKitPreview /></Suspense>}
+                />
+            )}
+            {MemberPreview && (
+                <Route
+                    path="/__member"
+                    element={<Suspense fallback={null}><MemberPreview /></Suspense>}
+                />
+            )}
+
             {/* Public Routes */}
             <Route element={<PublicLayout />}>
                 <Route path="/" element={<Home />} />
@@ -45,6 +63,7 @@ const AppRoutes = () => {
                 <Route path="/directory/:id" element={<ProfileDetail />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="*" element={<NotFound />} />
             </Route>
 
             {/* Standalone Hidden Admin Registration Route */}
@@ -78,8 +97,6 @@ const AppRoutes = () => {
                 </Route>
             </Route>
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
         </Routes>
     );
 };

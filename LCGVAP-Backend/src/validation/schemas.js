@@ -113,6 +113,17 @@ const changeAdminPasswordSchema = z.object({
   new_password: passwordSchema,
 });
 
+// -- PUBLIC AI CHAT ---------------------------------------------------------
+const publicAiChatSchema = z.object({
+  message: z.string().min(1, 'Message is required').max(800, 'Message is too long').trim(),
+  history: z.array(
+    z.object({
+      role: z.enum(['user', 'assistant']),
+      content: z.string().min(1).max(800).trim(),
+    })
+  ).max(6).optional().default([]),
+});
+
 // ── NEWS ──────────────────────────────────────────────────────
 const createNewsSchema = z.object({
   title:    z.string().min(1, 'Title is required').max(255).trim(),
@@ -132,5 +143,6 @@ module.exports = {
   rejectDegreeSchema,
   rejectUserSchema,
   changeAdminPasswordSchema,
+  publicAiChatSchema,
   createNewsSchema,
 };

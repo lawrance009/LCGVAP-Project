@@ -1,24 +1,14 @@
-import { createElement, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  ArrowRight,
-  BadgeCheck,
-  KeyRound,
-  LockKeyhole,
-  Mail,
-  ShieldCheck,
-} from 'lucide-react';
+import { KeyRound, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { BRAND } from '../constants/branding';
+import { Button, Container, Field, Input, Seal } from '../components/ui';
 
-const MotionDiv = motion.div;
-const MotionForm = motion.form;
-
-const trustItems = [
-  'OTP access for verified graduate accounts',
-  'Admin-reviewed records before login access',
-  'Private dashboard protected by secure session handling',
+const facts = [
+  'Sign in with a one-time code sent to your email. There is no password to remember.',
+  'Only graduates whose records have been reviewed can sign in.',
+  'Your dashboard shows where each of your degrees is in review.',
 ];
 
 const Login = () => {
@@ -28,6 +18,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { requestOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
+  const headingRef = useRef(null);
 
   const handleRequestOtp = async (event) => {
     event.preventDefault();
@@ -68,229 +59,118 @@ const Login = () => {
     setOtp(value.replace(/\D/g, '').slice(0, 6));
   };
 
+  // Move focus to the step heading when the step changes (not on first load).
+  const previousStep = useRef(step);
+  useEffect(() => {
+    if (previousStep.current === step) return;
+    previousStep.current = step;
+    headingRef.current?.focus();
+  }, [step]);
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <section className="relative overflow-hidden bg-[#0b1020] text-white">
-        <img
-          src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1920&q=80"
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-20"
-          aria-hidden="true"
-        />
-        <div className="absolute inset-0 bg-[#0b1020]/80" aria-hidden="true"></div>
-        <div className="absolute inset-x-0 top-0 grid h-1 grid-cols-3" aria-hidden="true">
-          <div className="bg-red-600"></div>
-          <div className="bg-white"></div>
-          <div className="bg-indigo-600"></div>
-        </div>
+    <div className="bg-wash">
+      <Container className="grid gap-8 py-10 sm:py-14 lg:grid-cols-12 lg:items-stretch lg:gap-0 lg:py-16">
+        {/* Context panel */}
+        <aside className="relative order-2 overflow-hidden rounded-panel bg-deep p-8 text-on-primary lg:order-1 lg:col-span-5 lg:rounded-r-none lg:p-12">
+          <Seal size="xl" className="absolute -right-10 -bottom-10 size-48 text-paper/10" decorative />
+          <h2 className="relative font-display text-heading font-semibold text-balance sm:text-headline">
+            Your record on the {BRAND.shortName} register
+          </h2>
+          <ul className="relative mt-8 space-y-5">
+            {facts.map((fact) => (
+              <li key={fact} className="flex gap-3 text-body text-canton-100">
+                <span className="mt-2.5 size-1.5 shrink-0 rounded-full bg-canton-100/60" aria-hidden="true" />
+                {fact}
+              </li>
+            ))}
+          </ul>
+        </aside>
 
-        <div className="relative mx-auto grid min-h-[720px] max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:py-14 lg:grid-cols-[0.95fr_0.78fr] lg:items-center lg:px-8 lg:py-16">
-          <MotionDiv
-            className="max-w-3xl"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
+        {/* Form panel */}
+        <section
+          aria-labelledby="login-title"
+          className="order-1 rounded-panel border border-line bg-paper p-6 sm:p-10 lg:order-2 lg:col-span-7 lg:rounded-l-none lg:border-l-0 lg:p-14"
+        >
+          <p className="text-caption font-semibold text-accent">Step {step} of 2</p>
+          <h1
+            id="login-title"
+            ref={headingRef}
+            tabIndex={-1}
+            className="mt-2 font-display text-headline font-semibold text-ink focus:outline-none"
           >
-            <div className="mb-5 inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-xs font-bold uppercase text-red-200 backdrop-blur">
-              <LockKeyhole className="h-4 w-4" aria-hidden="true" />
-              Graduate Access
-            </div>
+            {step === 1 ? 'Sign in' : 'Enter your code'}
+          </h1>
+          <p className="mt-3 max-w-md text-body text-muted">
+            {step === 1
+              ? 'Use the email address on your verified graduate record. We will send you a 6-digit sign-in code.'
+              : <>We sent a 6-digit code to <span className="font-semibold break-all text-ink">{email}</span>. It expires after a few minutes.</>}
+          </p>
 
-            <h1 className="max-w-3xl text-3xl font-black leading-tight sm:text-5xl lg:text-6xl">
-              Sign In To Your Verified Alumni Account
-            </h1>
+          <div className="mt-6 flex gap-1.5" aria-hidden="true">
+            {[1, 2].map((n) => (
+              <span key={n} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${n <= step ? 'bg-primary' : 'bg-line'}`} />
+            ))}
+          </div>
 
-            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
-              Access your {BRAND.shortName} dashboard with a secure one-time code sent to your registered email.
-            </p>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {trustItems.map((item) => (
-                <div key={item} className="rounded-md bg-white/[0.07] p-4">
-                  <ShieldCheck className="mb-3 h-5 w-5 text-red-300" aria-hidden="true" />
-                  <p className="text-sm font-semibold leading-6 text-slate-200">{item}</p>
+          {step === 1 ? (
+            <form key="email" onSubmit={handleRequestOtp} className="mt-8 max-w-md animate-swap space-y-6">
+              <Field label="Email address" required>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted" strokeWidth={1.75} aria-hidden="true" />
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                    spellCheck={false}
+                    placeholder="you@example.com"
+                    className="pl-11"
+                  />
                 </div>
-              ))}
-            </div>
-          </MotionDiv>
+              </Field>
 
-          <MotionDiv
-            className="rounded-md bg-white p-5 text-slate-950 shadow-2xl shadow-indigo-950/30 sm:p-6 lg:p-8"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.08, ease: 'easeOut' }}
-          >
-            <div className="mb-7">
-              <div className="mb-5 flex items-center gap-2">
-                <StepIndicator active={step === 1} label="Email" number="1" />
-                <div className="h-px flex-1 bg-slate-200"></div>
-                <StepIndicator active={step === 2} label="Code" number="2" />
+              <Button type="submit" size="lg" loading={loading} className="w-full sm:w-auto">
+                {loading ? 'Sending code…' : 'Send sign-in code'}
+              </Button>
+
+              <p className="border-t border-line pt-6 text-body text-muted">
+                Not on the register yet?{' '}
+                <Link to="/register" className="font-semibold text-primary underline decoration-primary/40 decoration-2 hover:decoration-primary underline-offset-4">
+                  Get verified
+                </Link>
+              </p>
+            </form>
+          ) : (
+            <form key="otp" onSubmit={handleVerifyOtp} className="mt-8 max-w-md animate-swap space-y-6">
+              <Field label="6-digit code" hint="Check your spam folder if it has not arrived." required>
+                <div className="relative">
+                  <KeyRound className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted" strokeWidth={1.75} aria-hidden="true" />
+                  <Input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(event) => updateOtp(event.target.value)}
+                    placeholder="000000"
+                    className="h-16 pl-12 text-center font-display text-heading tracking-[0.4em] tabular-nums"
+                  />
+                </div>
+              </Field>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Button type="submit" size="lg" loading={loading} className="w-full sm:w-auto">
+                  {loading ? 'Checking code…' : 'Sign in'}
+                </Button>
+                <Button variant="ghost" size="lg" onClick={() => setStep(1)}>
+                  Use a different email
+                </Button>
               </div>
-
-              <p className="mb-2 text-xs font-bold uppercase text-indigo-700">
-                {step === 1 ? 'Request Code' : 'Verify Email'}
-              </p>
-              <h2 className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-                {step === 1 ? 'Welcome back.' : 'Enter your code.'}
-              </h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                {step === 1
-                  ? 'Use the email attached to your verified graduate record.'
-                  : 'Check your inbox and enter the 6-digit code we sent.'}
-              </p>
-            </div>
-
-            <AnimatePresence mode="wait">
-              {step === 1 ? (
-                <MotionForm
-                  key="email"
-                  onSubmit={handleRequestOtp}
-                  className="space-y-5"
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 16 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                >
-                  <FormField
-                    id="login-email"
-                    label="Email Address"
-                    icon={Mail}
-                  >
-                    <input
-                      id="login-email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder="graduate@university.edu"
-                      className="h-12 w-full rounded-md bg-slate-50 pl-11 pr-4 text-base font-semibold text-slate-950 outline-none transition-colors placeholder:text-slate-400 focus:bg-white focus:ring-4 focus:ring-indigo-600/10"
-                    />
-                  </FormField>
-
-                  <PrimaryButton loading={loading} loadingText="Sending code...">
-                    Send OTP
-                  </PrimaryButton>
-
-                  <p className="rounded-md bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-                    Not registered yet?{' '}
-                    <Link to="/register" className="font-black text-indigo-700 transition-colors hover:text-red-700">
-                      Create an account
-                    </Link>
-                  </p>
-                </MotionForm>
-              ) : (
-                <MotionForm
-                  key="otp"
-                  onSubmit={handleVerifyOtp}
-                  className="space-y-5"
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                >
-                  <div>
-                    <label
-                      htmlFor="login-otp"
-                      className="mb-2 block text-xs font-bold uppercase text-slate-500"
-                    >
-                      Verification Code
-                    </label>
-                    <div className="relative">
-                      <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-                      <input
-                        id="login-otp"
-                        type="text"
-                        inputMode="numeric"
-                        required
-                        maxLength="6"
-                        value={otp}
-                        onChange={(event) => updateOtp(event.target.value)}
-                        placeholder="000000"
-                        className="h-16 w-full rounded-md bg-slate-50 pl-12 pr-4 text-center text-3xl font-black tracking-[0.24em] text-slate-950 outline-none transition-colors placeholder:text-slate-300 focus:bg-white focus:ring-4 focus:ring-indigo-600/10 sm:h-20 sm:text-4xl"
-                      />
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">
-                      Code sent to <span className="font-black text-slate-950">{email}</span>.{' '}
-                      <button
-                        type="button"
-                        onClick={() => setStep(1)}
-                        className="font-black text-indigo-700 transition-colors hover:text-red-700"
-                      >
-                        Change email
-                      </button>
-                    </p>
-                  </div>
-
-                  <PrimaryButton loading={loading} loadingText="Verifying...">
-                    Verify And Login
-                  </PrimaryButton>
-                </MotionForm>
-              )}
-            </AnimatePresence>
-          </MotionDiv>
-        </div>
-      </section>
+            </form>
+          )}
+        </section>
+      </Container>
     </div>
   );
 };
-
-const StepIndicator = ({ active, number, label }) => (
-  <div className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-black ${
-    active ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
-  }`}
-  >
-    <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
-      active ? 'bg-white text-indigo-700' : 'bg-white text-slate-500'
-    }`}
-    >
-      {number}
-    </span>
-    {label}
-  </div>
-);
-
-const FormField = ({
-  id,
-  label,
-  icon,
-  children,
-}) => (
-  <div>
-    <label htmlFor={id} className="mb-2 block text-xs font-bold uppercase text-slate-500">
-      {label}
-    </label>
-    <div className="relative">
-      {createElement(icon, {
-        className: 'pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400',
-        'aria-hidden': 'true',
-      })}
-      {children}
-    </div>
-  </div>
-);
-
-const PrimaryButton = ({
-  loading,
-  loadingText,
-  children,
-}) => (
-  <button
-    type="submit"
-    disabled={loading}
-    className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-md bg-red-600 px-5 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-  >
-    {loading ? (
-      <>
-        <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
-        {loadingText}
-      </>
-    ) : (
-      <>
-        {children}
-        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </>
-    )}
-  </button>
-);
 
 export default Login;

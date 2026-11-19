@@ -1,1 +1,442 @@
 @import "tailwindcss";
+
+/* ==========================================================================
+   VCLGC design tokens — "The Register"
+   Documented in docs/redesign/design-system.md. Change both together.
+   ========================================================================== */
+
+@theme {
+  /* ---- Primitive colours ------------------------------------------------ */
+  --color-canton-50: #f3f6fb;
+  --color-canton-100: #e9eef6;
+  --color-canton-300: #a9b8d3;
+  --color-canton-500: #3c5a94;
+  --color-canton-700: #002868;
+  --color-canton-800: #001f52;
+  --color-canton-900: #0e1a33;
+
+  --color-seal-50: #fcedef;
+  --color-seal-600: #bf0a30;
+  --color-seal-700: #9c0827;
+
+  --color-ledger-300: #d5dbe5;
+  --color-ledger-400: #8a94a8;
+  --color-ledger-500: #56627a;
+
+  /* ---- Semantic colours ------------------------------------------------- */
+  --color-paper: #ffffff;
+  --color-tint: var(--color-canton-100);
+  --color-wash: var(--color-canton-50);
+  --color-ink: var(--color-canton-900);
+  --color-muted: var(--color-ledger-500);
+  --color-faint: var(--color-ledger-400);
+  --color-line: var(--color-ledger-300);
+  --color-line-strong: var(--color-canton-300);
+  --color-primary: var(--color-canton-700);
+  --color-primary-hover: var(--color-canton-800);
+  /* Hero surface: one step darker than primary so white type and the photo carry it. */
+  --color-deep: var(--color-canton-800);
+  --color-on-primary: #ffffff;
+  --color-focus: var(--color-canton-500);
+  --color-seal: var(--color-seal-600);
+  /* Flag red as the brand's second colour: joining/verifying actions and accents. */
+  --color-accent: var(--color-seal-600);
+  --color-accent-hover: var(--color-seal-700);
+  --color-accent-soft: var(--color-seal-50);
+  --color-danger: var(--color-seal-600);
+  --color-danger-hover: var(--color-seal-700);
+  --color-danger-soft: var(--color-seal-50);
+
+  /* ---- Typography ------------------------------------------------------- */
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+
+  --text-caption: 0.875rem;
+  --text-caption--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.625rem;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.875rem;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.875rem;
+  --text-heading: 1.75rem;
+  --text-heading--line-height: 2.25rem;
+  --text-headline: 2.25rem;
+  --text-headline--line-height: 2.75rem;
+  --text-display: 3rem;
+  --text-display--line-height: 3.375rem;
+  --text-display-lg: 3.75rem;
+  --text-display-lg--line-height: 4rem;
+
+  /* ---- Layout ----------------------------------------------------------- */
+  --container-page: 75rem; /* 1200px */
+  --container-measure: 68ch;
+
+  /* ---- Radius (hierarchy) ---------------------------------------------- */
+  --radius-doc: 2px;
+  --radius-panel: 6px;
+
+  /* ---- Elevation: only for floating surfaces ---------------------------- */
+  --shadow-overlay: 0 12px 32px -8px rgb(14 26 51 / 0.22), 0 2px 6px rgb(14 26 51 / 0.08);
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --animate-stamp: stamp 420ms var(--ease-out-quart) 300ms both;
+  /* Content swap inside a rotating region (featured graduates). */
+  --animate-swap: swap 280ms var(--ease-out-quart) both;
+  /* Hero verification sequence: card rises, checks tick, seal stamps.
+     Delays are set per element with inline animation-delay. */
+  --animate-rise: rise 520ms var(--ease-out-quart) both;
+  --animate-tick: tick 360ms var(--ease-out-quart) both;
+  --animate-settle: settle 1400ms var(--ease-out-quart) both;
+  /* Hero photos: the incoming slide always enters from the right and the
+     outgoing one leaves to the left, including the wrap from last to first. */
+  --animate-slide-in: slide-in 1100ms var(--ease-out-quart) both;
+  --animate-slide-out: slide-out 1100ms var(--ease-out-quart) both;
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slide-out {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes tick {
+    0% {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    70% {
+      transform: scale(1.12);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Hero photo settles from a slight zoom on first paint. */
+  @keyframes settle {
+    from {
+      transform: scale(1.06);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes swap {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Relative to the element's own `rotate` (the seal's -12deg tilt is set
+     with the rotate utility), so the stamp lands on whatever tilt it has. */
+  @keyframes stamp {
+    0% {
+      opacity: 0;
+      transform: scale(1.35) rotate(-12deg);
+    }
+    60% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    /* Keep anchors and focused fields clear of the 64px sticky header. */
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: var(--color-canton-100);
+    color: var(--color-canton-900);
+  }
+
+  /* One visible focus style for the whole app. Never remove it. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0ms !important;
+      transition-duration: 0.01ms !important;
+      /* Staggered reveals (the stepper) set inline delays; skip them too. */
+      transition-delay: 0ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   Article typography for CMS HTML (news). The Tailwind typography plugin is
+   not installed, so rich text gets its styles here, on the tokens.
+   ========================================================================== */
+
+@layer components {
+  .article-body {
+    color: var(--color-ink);
+    font-size: var(--text-lead);
+    line-height: 1.75;
+  }
+  .article-body > * + * {
+    margin-top: 1.25em;
+  }
+  .article-body h2,
+  .article-body h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.25;
+    margin-top: 2em;
+  }
+  .article-body h2 {
+    font-size: var(--text-heading);
+  }
+  .article-body h3 {
+    font-size: var(--text-title);
+  }
+  .article-body a {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+    text-underline-offset: 4px;
+  }
+  .article-body ul,
+  .article-body ol {
+    padding-left: 1.4em;
+  }
+  .article-body ul {
+    list-style: disc;
+  }
+  .article-body ol {
+    list-style: decimal;
+  }
+  .article-body li + li {
+    margin-top: 0.4em;
+  }
+  .article-body li::marker {
+    color: var(--color-primary);
+  }
+  .article-body blockquote {
+    font-family: var(--font-display);
+    font-size: var(--text-title);
+    line-height: 1.5;
+  }
+  .article-body img {
+    border-radius: var(--radius-panel);
+    max-width: 100%;
+    height: auto;
+  }
+  .article-body strong {
+    font-weight: 700;
+  }
+  .article-body hr {
+    border-color: var(--color-line);
+  }
+}
+
+/* ==========================================================================
+   SweetAlert2 theme (behaviour unchanged; visuals follow the tokens)
+   Unlayered on purpose: SweetAlert injects its own unlayered CSS, which would
+   beat anything inside a cascade layer. The extra `.swal2-container` prefix
+   wins on specificity. Inline colours passed via confirmButtonColor still win,
+   so legacy calls keep their red "delete" buttons until their page migrates
+   (see docs/redesign/sprints.md).
+   ========================================================================== */
+
+.swal2-container.swal2-backdrop-show {
+  background: rgb(14 26 51 / 0.45);
+}
+
+.swal2-container .swal2-popup {
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-overlay);
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  padding: 1.5rem;
+}
+
+.swal2-container .swal2-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-title);
+  line-height: var(--text-title--line-height);
+  color: var(--color-ink);
+  padding: 0.5rem 0 0;
+}
+
+.swal2-container .swal2-html-container {
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  color: var(--color-muted);
+}
+
+.swal2-container .swal2-actions {
+  gap: 0.75rem;
+}
+
+.swal2-container .swal2-styled {
+  margin: 0;
+  border-radius: var(--radius-doc);
+  font-weight: 600;
+  font-size: var(--text-caption);
+  padding: 0.625rem 1.125rem;
+  box-shadow: none;
+}
+
+.swal2-container .swal2-styled.swal2-confirm {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.swal2-container .swal2-styled.swal2-deny,
+.swal2-container .swal2-styled.swal2-confirm.is-danger {
+  background-color: var(--color-danger);
+  color: var(--color-on-primary);
+}
+
+.swal2-container .swal2-styled.swal2-cancel {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+}
+
+.swal2-container .swal2-styled:not([disabled]):hover {
+  background-image: linear-gradient(rgb(0 0 0 / 0.12), rgb(0 0 0 / 0.12));
+}
+
+.swal2-container .swal2-styled.swal2-cancel:not([disabled]):hover {
+  background-image: none;
+  background-color: var(--color-tint);
+}
+
+.swal2-container .swal2-styled:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.swal2-container .swal2-input,
+.swal2-container .swal2-textarea,
+.swal2-container .swal2-select {
+  border-radius: var(--radius-doc);
+  border: 1px solid var(--color-line-strong);
+  box-shadow: none;
+  font-size: var(--text-body);
+  color: var(--color-ink);
+}
+
+.swal2-container .swal2-input:focus,
+.swal2-container .swal2-textarea:focus,
+.swal2-container .swal2-select:focus {
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
+}
+
+.swal2-container .swal2-icon.swal2-success {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.swal2-container .swal2-icon.swal2-success [class^="swal2-success-line"] {
+  background-color: var(--color-primary);
+}
+
+.swal2-container .swal2-icon.swal2-success .swal2-success-ring {
+  border-color: rgb(0 40 104 / 0.25);
+}
+
+.swal2-container .swal2-icon.swal2-error {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.swal2-container .swal2-icon.swal2-error [class^="swal2-x-mark-line"] {
+  background-color: var(--color-danger);
+}
+
+.swal2-container .swal2-icon.swal2-warning,
+.swal2-container .swal2-icon.swal2-info,
+.swal2-container .swal2-icon.swal2-question {
+  border-color: var(--color-line-strong);
+  color: var(--color-primary);
+}
+
+.swal2-container .swal2-timer-progress-bar {
+  background: var(--color-primary);
+}

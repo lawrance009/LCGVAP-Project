@@ -1,4 +1,6 @@
+import { CircleAlert, FileText } from 'lucide-react';
 import { getSignedFileUrl } from '../../services/api';
+import { StatusTag } from '../ui';
 
 /**
  * DegreeCard.jsx
@@ -16,28 +18,18 @@ import { getSignedFileUrl } from '../../services/api';
  * ---------------------------------------------------------------
  */
 
-/** Map degree_type → human-readable label and color scheme */
+/** Map degree_type → human-readable label */
 const DEGREE_DISPLAY = {
-  BACHELOR:  { label: 'Bachelor\'s Degree', color: 'blue'  },
-  MASTER:    { label: 'Master\'s Degree',   color: 'indigo' },
-  PHD:       { label: 'Doctor of Philosophy (PhD)', color: 'purple' },
-  POSTDOC:   { label: 'Post-Doctoral Research',     color: 'teal'   },
-  ASSOCIATE: { label: 'Associate Degree',           color: 'sky'    },
-  DIPLOMA:   { label: 'Diploma',                    color: 'slate'  },
-};
-
-const COLOR_CLASSES = {
-  blue:   { border: 'border-blue-200',   badge_bg: 'bg-blue-50',   badge_text: 'text-blue-700',   tag_bg: 'bg-blue-100',   tag_text: 'text-blue-800'   },
-  indigo: { border: 'border-indigo-200', badge_bg: 'bg-indigo-50', badge_text: 'text-indigo-700', tag_bg: 'bg-indigo-100', tag_text: 'text-indigo-800' },
-  purple: { border: 'border-purple-200', badge_bg: 'bg-purple-50', badge_text: 'text-purple-700', tag_bg: 'bg-purple-100', tag_text: 'text-purple-800' },
-  teal:   { border: 'border-teal-200',   badge_bg: 'bg-teal-50',   badge_text: 'text-teal-700',   tag_bg: 'bg-teal-100',   tag_text: 'text-teal-800'   },
-  sky:    { border: 'border-sky-200',    badge_bg: 'bg-sky-50',    badge_text: 'text-sky-700',    tag_bg: 'bg-sky-100',    tag_text: 'text-sky-800'    },
-  slate:  { border: 'border-slate-200',  badge_bg: 'bg-slate-50',  badge_text: 'text-slate-700',  tag_bg: 'bg-slate-100',  tag_text: 'text-slate-800'  },
+  BACHELOR: "Bachelor's degree",
+  MASTER: "Master's degree",
+  PHD: 'Doctor of Philosophy (PhD)',
+  POSTDOC: 'Post-doctoral research',
+  ASSOCIATE: 'Associate degree',
+  DIPLOMA: 'Diploma',
 };
 
 const DegreeCard = ({ degree }) => {
-  const display  = DEGREE_DISPLAY[degree?.degree_type] || { label: degree?.degree_type, color: 'slate' };
-  const colors   = COLOR_CLASSES[display.color];
+  const label = DEGREE_DISPLAY[degree?.degree_type] || degree?.degree_type;
   const hasBadge = degree?.is_verified && degree?.badge && degree.badge.name;
 
   const handleOpenDegreeDocument = async (event) => {
@@ -52,109 +44,82 @@ const DegreeCard = ({ degree }) => {
   };
 
   return (
-    <article
-      className={`bg-white rounded-lg border ${colors.border} shadow-sm p-5 transition-shadow hover:shadow-md`}
-      aria-label={`${display.label} credential`}
-    >
-      {/* ── Header Row ───────────────────────────── */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <h3 className="text-base font-semibold text-gray-800">{display.label}</h3>
-          {degree.field_of_study && (
-            <p className="text-sm text-gray-500 mt-0.5">{degree.field_of_study}</p>
-          )}
+    <article className="rounded-panel border border-line bg-paper p-5 sm:p-6" aria-label={`${label} credential`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-display text-title font-semibold text-ink">{label}</h3>
+          {degree.field_of_study && <p className="mt-0.5 text-caption text-muted">{degree.field_of_study}</p>}
         </div>
-
-        {/* Verification status pill */}
-        {degree.is_verified ? (
-          <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${colors.tag_bg} ${colors.tag_text}`}>
-            ✓ Verified
-          </span>
-        ) : (
-          <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            ⏳ Pending Verification
-          </span>
-        )}
+        <StatusTag status={degree.is_verified ? 'verified' : 'pending'} />
       </div>
 
-      {/* ── Degree Meta ──────────────────────────── */}
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4">
+      <dl className="mt-5 grid gap-x-6 gap-y-3 border-t border-line pt-4 text-caption sm:grid-cols-2">
         {degree.university_name && (
-          <>
-            <dt className="text-gray-400 font-medium">University</dt>
-            <dd className="text-gray-700">{degree.university_name}</dd>
-          </>
+          <div>
+            <dt className="text-muted">University</dt>
+            <dd className="mt-0.5 font-semibold text-ink">{degree.university_name}</dd>
+          </div>
         )}
         {degree.department_name && (
-          <>
-            <dt className="text-gray-400 font-medium">Department</dt>
-            <dd className="text-gray-700">{degree.department_name}</dd>
-          </>
+          <div>
+            <dt className="text-muted">Department</dt>
+            <dd className="mt-0.5 font-semibold text-ink">{degree.department_name}</dd>
+          </div>
         )}
         {degree.graduation_year && (
-          <>
-            <dt className="text-gray-400 font-medium">Graduation Year</dt>
-            <dd className="text-gray-700">{degree.graduation_year}</dd>
-          </>
+          <div>
+            <dt className="text-muted">Graduation year</dt>
+            <dd className="mt-0.5 font-semibold text-ink tabular-nums">{degree.graduation_year}</dd>
+          </div>
         )}
         {degree.verified_at && (
-          <>
-            <dt className="text-gray-400 font-medium">Verified On</dt>
-            <dd className="text-gray-700">
+          <div>
+            <dt className="text-muted">Verified on</dt>
+            <dd className="mt-0.5 font-semibold text-ink tabular-nums">
               {new Date(degree.verified_at).toLocaleDateString('en-US', {
-                year: 'numeric', month: 'short', day: 'numeric'
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
               })}
             </dd>
-          </>
+          </div>
         )}
       </dl>
 
-      {/* ── Badge Section ────────────────────────── */}
       {hasBadge ? (
-        <div className={`flex items-center gap-2.5 ${colors.badge_bg} rounded-md px-3 py-2`}>
-          <span
-            aria-hidden="true"
-            className="text-xl leading-none"
-            role="img"
-          >
+        <div className="mt-5 flex items-center gap-3 rounded-doc bg-tint px-3 py-2.5">
+          {/* Badge icon is server-provided data. */}
+          <span aria-hidden="true" className="text-xl leading-none">
             {degree.badge.icon}
           </span>
           <div>
-            <p className={`text-sm font-semibold ${colors.badge_text}`}>
-              {degree.badge.name}
-            </p>
-            {degree.badge.description && (
-              <p className="text-xs text-gray-500">{degree.badge.description}</p>
-            )}
+            <p className="text-caption font-semibold text-primary">{degree.badge.name}</p>
+            {degree.badge.description && <p className="text-caption text-muted">{degree.badge.description}</p>}
           </div>
         </div>
       ) : degree.is_verified ? (
-        /* Verified but badge data missing — fail gracefully */
-        <div className="flex items-center gap-2 text-sm text-gray-400 italic">
-          <span aria-hidden="true">🎓</span>
-          Badge data unavailable
-        </div>
+        <p className="mt-5 text-caption text-muted">Badge details are not available for this degree.</p>
       ) : (
-        /* Not verified */
-        <div className="text-sm text-gray-400 italic">
-          Badge will be awarded upon verification.
+        <div className="mt-5 text-caption text-muted">
+          A badge is awarded once this degree is verified.
           {degree.rejection_reason && (
-            <p className="mt-1 text-red-500 not-italic">
-              ⚠ Rejection note: {degree.rejection_reason}
+            <p className="mt-2 flex items-start gap-1.5 font-medium text-danger">
+              <CircleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              Reason given: {degree.rejection_reason}
             </p>
           )}
         </div>
       )}
 
-      {/* ── Degree Document Link ─────────────────── */}
       {degree.degree_file && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
+        <div className="mt-4 border-t border-line pt-3">
           <a
             href={degree.degree_file}
             onClick={handleOpenDegreeDocument}
-            className="text-xs text-indigo-600 hover:underline inline-flex items-center gap-1"
+            className="inline-flex items-center gap-1.5 rounded-doc text-caption font-semibold text-primary underline-offset-4 hover:underline"
           >
-            📄 View Degree Document
+            <FileText className="size-4" strokeWidth={1.75} aria-hidden="true" />
+            View degree document
           </a>
         </div>
       )}
